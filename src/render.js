@@ -1,7 +1,6 @@
 
 
 
-var robot = require("robotjs");
 
 // buttons
 const mouseButton = document.getElementById('mouseButton');
@@ -11,13 +10,14 @@ mouseButton.addEventListener("click", Start);
 
 
 // functions 
-module.exports = function Start() {
+function Start() {
     console.log("Started");
     mouseButton.removeEventListener("click", Start);
     mouseButton.addEventListener("click", Stop);
     mouseButton.value = "Stop"
 
     console.log("test")
+    var robot = require("robotjs");
 
     var mouse=robot.getMousePos();
     console.log("Mouse is at x:" + mouse.x + " y:" + mouse.y);
@@ -28,7 +28,7 @@ module.exports = function Start() {
 
 }
 
-module.exports = function Stop() {
+function Stop() {
     console.log("Stopped");
     mouseButton.removeEventListener("click", Stop);
     mouseButton.addEventListener("click", Start);
