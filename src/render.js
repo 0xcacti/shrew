@@ -1,7 +1,4 @@
 
-
-
-
 // buttons
 const mouseButton = document.getElementById('mouseButton');
 
@@ -10,21 +7,15 @@ mouseButton.addEventListener("click", Start);
 
 
 // functions 
-function Start() {
+async function Start()  {
     console.log("Started");
     mouseButton.removeEventListener("click", Start);
     mouseButton.addEventListener("click", Stop);
-    mouseButton.value = "Stop"
+    mouseButton.value = "Stop";
+   await window.electronAPI.startMouse();
 
     console.log("test")
-    var robot = require("robotjs");
-
-    var mouse=robot.getMousePos();
-    console.log("Mouse is at x:" + mouse.x + " y:" + mouse.y);
-
-    //Move the mouse down by 100 pixels.
-    robot.moveMouse(mouse.x,mouse.y+100);
-
+    
 
 }
 

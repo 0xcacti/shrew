@@ -1,15 +1,25 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
+//ar math = require('mathjs');
 const path = require('path');
-const http = require("http");
+
+app.allowRendererProcessReuse = true;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+// to be used by ipc
+var robot = require("robotjs");
+
+
 
 
 const createWindow = () => {
+
+
+
+
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
@@ -20,7 +30,31 @@ const createWindow = () => {
       enableRemoteModule: true,
       preload: path.join(__dirname, 'preload.js'),
     },
+  });  
+  var mouse=robot.getMousePos();
+  while (true) {
+    const xMov = Math.floor(Math.random() * 100)
+    const yMov = Math.floor(Math.random() * 100)
+
+    console.log("Mouse is at x:" + mouse.x + " y:" + mouse.y);
+    //Move the mouse down by 100 pixels.
+    robot.moveMouseSmooth(mouse.x + xMov, mouse.y + yMov)
+    sleep(10000);
+
+  }
+
+
+  ipcMain.on('start-mouse', (event, title) => {
+    var mouse=robot.getMousePos();
+    console.log("Mouse is at x:" + mouse.x + " y:" + mouse.y);
+    //Move the mouse down by 100 pixels.
+    
+    robot.moveMouse(mouse.x,mouse.y+100);
+    console.log("Mouse is at x:" + mouse.x + " y:" + mouse.y);
+
   });
+
+
 
   // and load the index.html of the app.
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
@@ -51,6 +85,10 @@ app.on('activate', () => {
   }
 });
 
+
+function sleep (time) {
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
 
 
 
