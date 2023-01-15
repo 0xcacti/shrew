@@ -21,6 +21,8 @@ import (
 
 // use atomics
 
+// add bench marks for cpu's to make sure it's not eating cycles unnecesarrily.
+
 // do we need to draft up some legal agreement so they don't sue us if they lose their job
 // do we need to handle returns or add non-refundability
 //
