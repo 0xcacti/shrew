@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -13,14 +14,28 @@ import (
 
 // goals
 // make it look pretty
+
 // make it appear in a good location
 // make it behave properly
 // make it quit on red x
+
+// use atomics
+
+// do we need to draft up some legal agreement so they don't sue us if they lose their job
+// do we need to handle returns or add non-refundability
+//
+
+var runBool atomic.Bool
+
 func main() {
+
 	a := app.New()
 	w := a.NewWindow("Green Dot")
 	w.Resize(fyne.NewSize(500, 100))
+
 	startStopChannel := make(chan bool)
+	go startWithChan(startStopChannel)
+	// startStopChannel <- true
 
 	var runButton *widget.Button
 
@@ -28,13 +43,20 @@ func main() {
 	// start stop just tracks if we should be starting or stopping, on receipt of that value,
 	// we send sigint to process
 	runButton = widget.NewButton("Start", func() {
+
 		toggleStartStopButton(runButton)
-		if runButton.Text == "Start" {
-			preStart(startStopChannel)
-			fmt.Println("Have yer stopped lad?")
+
+		if runButton.Text == "Stop" {
+			runBool.Store(true)
+			// startStopChannel <- true
+
 		} else {
-			startStopChannel <- false
+			runBool.Store(false)
+			// startStopChannel <- false
 		}
+
+		runButton.Refresh()
+
 	})
 
 	w.SetContent(runButton)
@@ -50,34 +72,19 @@ func toggleStartStopButton(button *widget.Button) {
 
 }
 
-func preStart(c chan bool) {
-	fmt.Println("balls1")
-
-	go start(c)
-
-	fmt.Println("balls2")
-
-}
-
-func start(c chan bool) {
+func startWithChan(c chan bool) {
 
 	for {
-		select {
-		case run := <-c:
-			if !run {
-				return
-			}
-
-		default:
-
+		if runBool.Load() {
+			fmt.Println("Moving cursor")
 			x := rand.Intn(1000)
 			y := rand.Intn(1000)
-
 			robotgo.MoveSmooth(x, y)
-
-			time.Sleep(5 * time.Second)
-
+			time.Sleep(2 * time.Second)
+		} else {
+			time.Sleep(1 * time.Second)
 		}
 
 	}
+
 }
