@@ -1,38 +1,83 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/widget"
 	"github.com/go-vgo/robotgo"
 )
 
+// goals
+// make it look pretty
+// make it appear in a good location
+// make it behave properly
+// make it quit on red x
 func main() {
 	a := app.New()
-	w := a.NewWindow("Clock")
+	w := a.NewWindow("Green Dot")
+	w.Resize(fyne.NewSize(500, 100))
+	startStopChannel := make(chan bool)
 
-	clock := widget.NewLabel("")
-	updateTime(clock)
+	var runButton *widget.Button
 
-	w.SetContent(clock)
-	go start()
+	// create go func that does the movement with a channel to check if true or fales
+	// start stop just tracks if we should be starting or stopping, on receipt of that value,
+	// we send sigint to process
+	runButton = widget.NewButton("Start", func() {
+		toggleStartStopButton(runButton)
+		if runButton.Text == "Start" {
+			preStart(startStopChannel)
+			fmt.Println("Have yer stopped lad?")
+		} else {
+			startStopChannel <- false
+		}
+	})
+
+	w.SetContent(runButton)
 	w.ShowAndRun()
 }
 
-func updateTime(clock *widget.Label) {
-	formatted := time.Now().Format("Time: 03:04:05")
-	clock.SetText(formatted)
+func toggleStartStopButton(button *widget.Button) {
+	if button.Text == "Start" {
+		button.SetText("Stop")
+	} else {
+		button.SetText("Start")
+	}
+
 }
 
-func start() {
+func preStart(c chan bool) {
+	fmt.Println("balls1")
+
+	go start(c)
+
+	fmt.Println("balls2")
+
+}
+
+func start(c chan bool) {
+
 	for {
-		x := rand.Intn(1000)
-		y := rand.Intn(1000)
+		select {
+		case run := <-c:
+			if !run {
+				return
+			}
 
-		robotgo.MoveSmooth(x, y)
+		default:
 
-		time.Sleep(2 * time.Second)
+			x := rand.Intn(1000)
+			y := rand.Intn(1000)
+
+			robotgo.MoveSmooth(x, y)
+
+			time.Sleep(5 * time.Second)
+
+		}
+
 	}
 }
