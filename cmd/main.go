@@ -37,20 +37,16 @@ func main() {
 	a := app.New()
 	w := a.NewWindow("Green Dot")
 
-	deskTopIcon, err := fyne.LoadResourceFromPath("./assets/ethereum.jpg")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// load assets for icons
+	// desktopIcon, err := fyne.LoadResourceFromPath("./assets/ethereum.jpg")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 	iconResource, err := fyne.LoadResourceFromPath("./assets/ethereum.png")
 	if err != nil {
 		log.Fatal(err)
 	}
-	icon := widget.NewIcon(iconResource)
-
-	w.SetContent(icon)
-	a.SetIcon(deskTopIcon)
-
-	// icon := widget.NewIcon(iconResource)
+	// s
 
 	if desk, ok := a.(desktop.App); ok {
 		m := fyne.NewMenu("Green Dot",

@@ -2,21 +2,21 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/go-vgo/robotgo"
 )
 
-// goals
-// make it look pretty
-
+// TODO goals
+// make it look pretty - I am not really sure what I can do here
 // make it appear in a good location
-// make it behave properly
 // make it quit on red x
 
 // use atomics
@@ -30,39 +30,84 @@ import (
 var runBool atomic.Bool
 
 func main() {
+	// start the core functionality
+	// TODO - should we add wait group for graceful shutdown - probably
+	// add keyboard shortcut to quit
 
 	a := app.New()
 	w := a.NewWindow("Green Dot")
-	w.Resize(fyne.NewSize(500, 100))
 
-	startStopChannel := make(chan bool)
-	go startWithChan(startStopChannel)
-	// startStopChannel <- true
+	deskTopIcon, err := fyne.LoadResourceFromPath("./assets/ethereum.jpg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	iconResource, err := fyne.LoadResourceFromPath("./assets/ethereum.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	icon := widget.NewIcon(iconResource)
 
-	var runButton *widget.Button
+	w.SetContent(icon)
+	a.SetIcon(deskTopIcon)
 
-	// create go func that does the movement with a channel to check if true or fales
-	// start stop just tracks if we should be starting or stopping, on receipt of that value,
-	// we send sigint to process
-	runButton = widget.NewButton("Start", func() {
+	// icon := widget.NewIcon(iconResource)
 
-		toggleStartStopButton(runButton)
+	if desk, ok := a.(desktop.App); ok {
+		m := fyne.NewMenu("Green Dot",
+			fyne.NewMenuItem("Show", func() {
+				w.Show()
+			}))
+		desk.SetSystemTrayMenu(m)
+		desk.SetSystemTrayIcon(iconResource)
+		// r := fyne.NewStaticResource("meowtown", []byte(data))
+		// // icon := widget.NewIcon(r)
+		// desk.SetSystemTrayIcon(r)
+	}
 
-		if runButton.Text == "Stop" {
-			runBool.Store(true)
-			// startStopChannel <- true
-
-		} else {
-			runBool.Store(false)
-			// startStopChannel <- false
-		}
-
-		runButton.Refresh()
-
+	w.SetContent(widget.NewLabel("Fyne System Tray"))
+	w.SetCloseIntercept(func() {
+		w.Close()
+		a.Quit()
 	})
-
-	w.SetContent(runButton)
 	w.ShowAndRun()
+
+	// go start()
+
+	// a := app.New()
+	// // TODO - create logging for not in desktop mode
+	// if desk, ok := a.(desktop.App); ok {
+	// 	m := fyne.NewMenu("MyApp",
+	// 		fyne.NewMenuItem("Show", func() {
+	// 			log.Println("Tapped show")
+	// 		}))
+	// 	desk.SetSystemTrayMenu(m)
+	// }
+
+	// w := a.NewWindow("Green Dot")
+	// w.SetCloseIntercept(func() {
+	// 	w.Hide()
+	// })
+	// var runButton *widget.Button
+
+	// w.Resize(fyne.NewSize(200, 100))
+
+	// runButton = widget.NewButton("Start", func() {
+
+	// 	// switch text
+	// 	toggleStartStopButton(runButton)
+
+	// 	// define button behavior
+	// 	if runButton.Text == "Stop" {
+	// 		runBool.Store(true)
+	// 	} else {
+	// 		runBool.Store(false)
+	// 	}
+	// 	runButton.Refresh()
+	// })
+
+	// // run and display app
+	// w.SetContent(runButton)
+	// w.ShowAndRun()
 }
 
 func toggleStartStopButton(button *widget.Button) {
@@ -74,7 +119,7 @@ func toggleStartStopButton(button *widget.Button) {
 
 }
 
-func startWithChan(c chan bool) {
+func start() {
 
 	for {
 		if runBool.Load() {
