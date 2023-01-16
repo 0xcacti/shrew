@@ -16,10 +16,9 @@ import (
 
 // TODO goals
 // make it look pretty - I am not really sure what I can do here
-// make it appear in a good location
-// make it quit on red x
 
-// use atomics
+// make it appear in a good location (not sure how to do this)
+// make it quit on red x (done)
 
 // add bench marks for cpu's to make sure it's not eating cycles unnecesarrily.
 
@@ -37,8 +36,7 @@ func main() {
 	a := app.New()
 	w := a.NewWindow("Green Dot")
 
-	// load assets for icons
-	// desktopIcon, err := fyne.LoadResourceFromPath("./assets/ethereum.jpg")
+	// deskTopIcon, err := fyne.LoadResourceFromPath("./assets/ethereum.jpg")
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
@@ -46,7 +44,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// s
+	// icon := widget.NewIcon(iconResource)
+
+	// w.SetContent(icon)
+	// a.SetIcon(deskTopIcon)
+
+	// icon := widget.NewIcon(iconResource)
 
 	if desk, ok := a.(desktop.App); ok {
 		m := fyne.NewMenu("Green Dot",
@@ -66,6 +69,7 @@ func main() {
 		a.Quit()
 	})
 	w.ShowAndRun()
+	w.SetMaster()
 
 	// go start()
 
