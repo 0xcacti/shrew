@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
 	"sync/atomic"
@@ -12,45 +11,55 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/go-vgo/robotgo"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-// TODO goals
-// make it look pretty - I am not really sure what I can do here
-
-// make it appear in a good location (not sure how to do this)
-// make it quit on red x (done)
-
-// add bench marks for cpu's to make sure it's not eating cycles unnecesarrily.
+// TODO - programming goals
 
 // do we need to draft up some legal agreement so they don't sue us if they lose their job
 // do we need to handle returns or add non-refundability
-//
 
 var runBool atomic.Bool
+var sugar *zap.SugaredLogger
 
-func main() {
-	// start the core functionality
-	// TODO - should we add wait group for graceful shutdown - probably
-	// add keyboard shortcut to quit
+func init() {
 
-	a := app.New()
-	w := a.NewWindow("Green Dot")
+	loggerConfig := zap.NewProductionConfig()
+	loggerConfig.EncoderConfig.TimeKey = "timestamp"
+	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC1123)
 
-	// deskTopIcon, err := fyne.LoadResourceFromPath("./assets/ethereum.jpg")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	iconResource, err := fyne.LoadResourceFromPath("./assets/ethereum.png")
+	logger, err := loggerConfig.Build()
 	if err != nil {
 		log.Fatal(err)
 	}
-	// icon := widget.NewIcon(iconResource)
 
-	// w.SetContent(icon)
-	// a.SetIcon(deskTopIcon)
+	sugar = logger.Sugar()
+	sugar.Info("Warming up program")
 
-	// icon := widget.NewIcon(iconResource)
+}
 
+func main() {
+
+	// create app and window and init go routine for mouse behavior
+	a := app.New()
+	w := a.NewWindow("Green Dot")
+	w.Resize(fyne.NewSize(200, 100))
+	w.SetFixedSize(true) // should it be fixed size
+	w.SetMaster()
+	w.SetPadded(true)
+
+	go start()
+
+	// pull in resources for in app icons
+	iconResource, err := fyne.LoadResourceFromPath("./assets/ethereum.png")
+	if err != nil {
+		sugar.Debug("Failed to load application icon")
+	}
+
+	// init keyboard shortcut
+
+	// verify that we can add app to system tray
 	if desk, ok := a.(desktop.App); ok {
 		m := fyne.NewMenu("Green Dot",
 			fyne.NewMenuItem("Show", func() {
@@ -58,56 +67,47 @@ func main() {
 			}))
 		desk.SetSystemTrayMenu(m)
 		desk.SetSystemTrayIcon(iconResource)
-		// r := fyne.NewStaticResource("meowtown", []byte(data))
-		// // icon := widget.NewIcon(r)
-		// desk.SetSystemTrayIcon(r)
 	}
 
-	w.SetContent(widget.NewLabel("Fyne System Tray"))
+	// define shutdown behavior
 	w.SetCloseIntercept(func() {
 		w.Close()
 		a.Quit()
 	})
+
+	var runButton *widget.Button
+
+	runButton = widget.NewButton("Start", func() {
+
+		// switch text
+		toggleStartStopButton(runButton)
+
+		// define button behavior
+		if runButton.Text == "Stop" {
+			runBool.Store(true)
+			sugar.Info("Application started")
+		} else {
+			runBool.Store(false)
+			sugar.Info("Application stopped")
+		}
+		runButton.Refresh()
+	})
+
+	ctrlTab := &desktop.CustomShortcut{KeyName: fyne.KeyG, Modifier: fyne.KeyModifierShortcutDefault}
+	w.Canvas().AddShortcut(ctrlTab, func(shortcut fyne.Shortcut) {
+		toggleStartStopButton(runButton)
+		if runButton.Text == "Stop" {
+			runBool.Store(true)
+			sugar.Info("Application Started with shortcut ctrl-g")
+		} else {
+			runBool.Store(false)
+			sugar.Info("Application Stopped with shortcut ctrl-g")
+		}
+	})
+
+	// run and display app
+	w.SetContent(runButton)
 	w.ShowAndRun()
-	w.SetMaster()
-
-	// go start()
-
-	// a := app.New()
-	// // TODO - create logging for not in desktop mode
-	// if desk, ok := a.(desktop.App); ok {
-	// 	m := fyne.NewMenu("MyApp",
-	// 		fyne.NewMenuItem("Show", func() {
-	// 			log.Println("Tapped show")
-	// 		}))
-	// 	desk.SetSystemTrayMenu(m)
-	// }
-
-	// w := a.NewWindow("Green Dot")
-	// w.SetCloseIntercept(func() {
-	// 	w.Hide()
-	// })
-	// var runButton *widget.Button
-
-	// w.Resize(fyne.NewSize(200, 100))
-
-	// runButton = widget.NewButton("Start", func() {
-
-	// 	// switch text
-	// 	toggleStartStopButton(runButton)
-
-	// 	// define button behavior
-	// 	if runButton.Text == "Stop" {
-	// 		runBool.Store(true)
-	// 	} else {
-	// 		runBool.Store(false)
-	// 	}
-	// 	runButton.Refresh()
-	// })
-
-	// // run and display app
-	// w.SetContent(runButton)
-	// w.ShowAndRun()
 }
 
 func toggleStartStopButton(button *widget.Button) {
@@ -123,11 +123,10 @@ func start() {
 
 	for {
 		if runBool.Load() {
-			fmt.Println("Moving cursor")
 			x := rand.Intn(1000)
 			y := rand.Intn(1000)
 			robotgo.MoveSmooth(x, y)
-			time.Sleep(2 * time.Second)
+			time.Sleep(3 * time.Second)
 		} else {
 			time.Sleep(1 * time.Second)
 		}
