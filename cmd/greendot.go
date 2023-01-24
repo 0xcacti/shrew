@@ -20,8 +20,10 @@ import (
 // do we need to draft up some legal agreement so they don't sue us if they lose their job
 // do we need to handle returns or add non-refundability
 
-var runBool atomic.Bool
-var sugar *zap.SugaredLogger
+var (
+	runBool atomic.Bool
+	sugar   *zap.SugaredLogger
+)
 
 func init() {
 
