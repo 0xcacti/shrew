@@ -1,0 +1,31 @@
+# Build artifacts
+bin/
+obj/
+
+# Editor/IDE files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+compile_commands.json
+
+# macOS metadata
+.DS_Store
+
+# Criterion test output
+*.log
+*.test.c
+*.test.o
+
+# Backup files
+*.bak
+
+# Optional: tag files
+tags
+TAGS
+
+# Optional: clangd or LSP junk
+.cache/
+.clangd/
+
