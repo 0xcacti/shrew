@@ -3,11 +3,28 @@ IndentWidth: 2
 TabWidth: 2
 UseTab: Never
 ColumnLimit: 100
+
+# Don’t try to pack multiple initializer-list entries onto one line
+BinPackInitializers: false
+
+# Whenever you have a brace-enclosed initializer, break it onto its own lines
+BreakBeforeBracedInitializers: true
+
+# (Optional) ensure a trailing comma on the last element when you do split lines
+IncludeTrailingCommas: true
+
 AlignAfterOpenBracket: Align
 BreakBeforeBraces: Attach
-AllowShortIfStatementsOnASingleLine: true
-AllowShortFunctionsOnASingleLine: None   
-AllowShortLoopsOnASingleLine: true
+
+BinPackArguments: false
+BinPackParameters: false
+
+AllowAllConstructorInitializersOnNextLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortLoopsOnASingleLine: false
+
 BraceWrapping:
-  AfterFunction: true                   
+  AfterFunction: true
   SplitEmptyFunction: true
+

@@ -3,7 +3,7 @@
 #include <string.h>
 
 token_t token_new(token_type_t type, const char *literal) {
-  token_t token;
+  token_t token = {0};
   token.type = type;
   if (literal) {
     token.literal = strdup(literal);

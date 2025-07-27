@@ -10,12 +10,16 @@ TEST_DIR   := tests
 
 SRC        := $(wildcard $(SRC_DIR)/*.c)
 OBJ        := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+LIB_OBJ    := $(filter-out $(OBJ_DIR)/main.o, $(OBJ))
 
 TEST_SRC   := $(wildcard $(TEST_DIR)/*.c)
 TEST_OBJ   := $(TEST_SRC:$(TEST_DIR)/%.c=$(OBJ_DIR)/%.test.o)
 
-CFLAGS     := -Wall -Wextra -O2 -I$(INCLUDE)
-LDLIBS     := -lcriterion
+PKG_CFLAGS := $(shell pkg-config --cflags criterion)
+PKG_LIBS   := $(shell pkg-config --libs   criterion)
+
+CFLAGS     := -Wall -Wextra -O2 -I$(INCLUDE) $(PKG_CFLAGS)
+LDLIBS     := $(PKG_LIBS)
 
 # === Default Build ===
 all: $(TARGET)
@@ -33,7 +37,7 @@ $(OBJ_DIR)/%.test.o: $(TEST_DIR)/%.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # === Test Target ===
-$(TEST_BIN): $(OBJ) $(TEST_OBJ) | $(BIN_DIR)
+$(TEST_BIN): $(LIB_OBJ) $(TEST_OBJ) | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 test: $(TEST_BIN)
