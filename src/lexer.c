@@ -11,6 +11,13 @@ void read_char(lexer_t *lexer) {
     lexer->ch = lexer->input[lexer->read_position];
   }
 
+  if (lexer->ch == '\n') {
+    lexer->line++;
+    lexer->column = 0;
+  } else {
+    lexer->column++;
+  }
+
   lexer->position = lexer->read_position;
   lexer->read_position += 1;
 }
@@ -142,6 +149,8 @@ token_t lexer_next_token(lexer_t *lexer) {
           token = token_new(TOKEN_NUMBER, literal);
         } else {
           token = token_new(TOKEN_INVALID, literal);
+          token.line = lexer->line;
+          token.column = lexer->column;
         }
       } else {
         token = token_new(TOKEN_SYMBOL, read_symbol(lexer));
@@ -154,6 +163,8 @@ token_t lexer_next_token(lexer_t *lexer) {
           token = token_new(TOKEN_NUMBER, literal);
         } else {
           token = token_new(TOKEN_INVALID, literal);
+          token.line = lexer->line;
+          token.column = lexer->column;
         }
       } else {
         token = token_new(TOKEN_DOT, ".");
@@ -186,6 +197,8 @@ token_t lexer_next_token(lexer_t *lexer) {
       break;
     case '@':
       token = token_new(TOKEN_INVALID, "@");
+      token.line = lexer->line;
+      token.column = lexer->column;
       read_char(lexer);
       break;
     case '#': 
@@ -199,6 +212,8 @@ token_t lexer_next_token(lexer_t *lexer) {
         token = token_new(TOKEN_FALSE, "#f");
       } else {
         token = token_new(TOKEN_INVALID, read_symbol(lexer));
+        token.line = lexer->line;
+        token.column = lexer->column;
       }
       break;
     case '"': 
@@ -207,6 +222,8 @@ token_t lexer_next_token(lexer_t *lexer) {
         token = token_new(TOKEN_STRING, literal);
       } else {
         token = token_new(TOKEN_INVALID, literal);
+        token.line = lexer->line;
+        token.column = lexer->column;
       }
       break;
     case '0': case '1': case '2': case '3': case '4':
@@ -216,6 +233,8 @@ token_t lexer_next_token(lexer_t *lexer) {
           token = token_new(TOKEN_NUMBER, literal);
         } else {
           token = token_new(TOKEN_INVALID, literal);
+          token.line = lexer->line;
+          token.column = lexer->column;
         }
       break;
     default: 

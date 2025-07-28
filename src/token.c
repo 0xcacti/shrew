@@ -10,6 +10,8 @@ token_t token_new(token_type_t type, const char *literal) {
   } else {
     token.literal = NULL;
   }
+  token.line = 0;
+  token.column = 0;
 
   return token;
 }

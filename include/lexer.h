@@ -10,6 +10,8 @@ typedef struct lexer {
   char ch;
   const char *input;
   size_t input_len;
+  size_t line;
+  size_t column;
 } lexer_t;
 
 lexer_t lexer_new(const char *input);
