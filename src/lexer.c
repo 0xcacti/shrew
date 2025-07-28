@@ -40,7 +40,17 @@ char *read_string(lexer_t *lexer) {
     }
   }
 
-  return strndup(lexer->input + start_pos, lexer->position - start_pos);
+  char *str = strndup(lexer->input + start_pos, lexer->position - start_pos);
+  read_char(lexer);
+  return str;
+}
+
+char peek(lexer_t *lexer) {
+  if (lexer->read_position >= lexer->input_len) {
+    return 0;
+  } else {
+    return lexer->input[lexer->read_position];
+  }
 }
 
 char *read_number(lexer_t *lexer) {
@@ -64,14 +74,6 @@ char *read_symbol(lexer_t *lexer) {
     return NULL;
   }
   return strndup(lexer->input + start_pos, length);
-}
-
-char peek(lexer_t *lexer) {
-  if (lexer->read_position >= lexer->input_len) {
-    return 0;
-  } else {
-    return lexer->input[lexer->read_position];
-  }
 }
 
 lexer_t lexer_new(const char *input) {
@@ -102,9 +104,11 @@ token_t lexer_next_token(lexer_t *lexer) {
       break;
     case '(': 
       token = token_new(TOKEN_LPAREN, "(");
+      read_char(lexer);
       break;
     case ')':
       token = token_new(TOKEN_RPAREN, ")");
+      read_char(lexer);
       break;
     case '"': 
       token = token_new(TOKEN_STRING, read_string(lexer));
@@ -118,7 +122,6 @@ token_t lexer_next_token(lexer_t *lexer) {
       break;
   }
 
-  read_char(lexer);
   return token;
 }
 
