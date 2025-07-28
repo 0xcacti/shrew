@@ -144,10 +144,11 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
     } else {
       atom.value.boolean = false;
     }
+    break;
   default:
     parser_add_error(parser, "Expected atom but found '%s' at %zu:%zu",
-                     strdup(parser->current_token.literal),
-                     parser->current_token.line, parser->current_token.column);
+                     parser->current_token.literal, parser->current_token.line,
+                     parser->current_token.column);
     return NULL;
   }
 
