@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "lexer.h"
+#include "string.h"
 #include "token.h"
 #include <stdarg.h>
 #include <stdlib.h>
@@ -77,9 +78,73 @@ void parser_next(parser_t *parser) {
   parser->next_token = lexer_next_token(parser->lexer);
 }
 
-int parser_parse_s_expression(parser_t *parser, s_expression_t **out) {
+s_expression_t *parser_parse_list(parser_t *parser) {}
 
-  return 0;
+// typedef enum {
+//   ATOM,
+//   LIST,
+// } node_type_t;
+//
+// typedef struct s_expression {
+//   node_type_t type;
+//   union {
+//     char *atom;
+//     struct {
+//       struct s_expression **elements;
+//       size_t count;
+//     } list;
+//   } data;
+// } s_expression_t;
+
+s_expression_t *parser_parse_atom(parser_t *parser) {
+  atom_t atom = {0};
+
+  switch (parser->current_token.type) {
+  case TOKEN_SYMBOL:
+    atom.type = ATOM_SYMBOL;
+    atom.value.symbol = parser->current_token.literal;
+    break;
+  case TOKEN_NUMBER:
+    atom.type = ATOM_NUMBER;
+    atom.value.number =
+        atoi(parser->current_token.literal); // HOW TO HANDLE ERRORS HERE
+    break;
+  case TOKEN_STRING:
+    atom.type = ATOM_STRING;
+    atom.value.string = parser->current_token.literal;
+    break;
+  case TOKEN_FALSE:
+  case TOKEN_TRUE:
+    atom.type = ATOM_BOOLEAN;
+    if (strcmp(parser->current_token.literal, "#t") == 0) {
+      atom.value.boolean = true;
+    } else {
+      atom.value.boolean = false;
+    }
+  default:
+    parser_add_error(parser, "Expected atom but found '%s' at %zu:%zu",
+                     strdup(parser->current_token.literal),
+                     parser->current_token.line, parser->current_token.column);
+    return NULL;
+  }
+
+  s_expression_t *atom_sexp = malloc(sizeof(s_expression_t));
+  if (!atom_sexp) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+
+  atom_sexp->type = NODE_ATOM;
+  atom_sexp->data.atom = atom;
+
+  return atom_sexp;
+}
+
+s_expression_t *parser_parse_s_expression(parser_t *parser) {
+  switch (parser->current_token.type) {
+  case TOKEN_LPAREN:
+    parser_parse_list(parser, out);
+  }
 }
 
 s_expression_t **parser_parse(parser_t *parser) {
@@ -88,9 +153,8 @@ s_expression_t **parser_parse(parser_t *parser) {
   size_t expr_count = 0;
 
   while (parser->current_token.type != TOKEN_EOF) {
-    s_expression_t *sexp = NULL;
-    int status = parser_parse_s_expression(parser, &sexp);
-    if (status == 0) {
+    s_expression_t *sexp = parser_parse_s_expression(parser);
+    if (sexp) {
       exprs[expr_count++] = sexp;
       if (expr_count == expr_cap) {
         expr_cap *= 2;
@@ -100,12 +164,8 @@ s_expression_t **parser_parse(parser_t *parser) {
           exit(EXIT_FAILURE);
         }
       }
-    } else {
-      parser_add_error(parser, "Parse error at %zu:%zu, skipping token '%s'",
-                       parser->current_token.line, parser->current_token.column,
-                       parser->current_token.literal);
-      parser_next(parser);
     }
+    parser_next(parser);
   }
   return exprs;
 }

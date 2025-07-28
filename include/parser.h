@@ -1,18 +1,36 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stdbool.h>
 #include "token.h"
 #include "lexer.h"
 
 typedef enum {
-  ATOM,
-  LIST,
+  ATOM_SYMBOL,
+  ATOM_NUMBER,
+  ATOM_STRING,
+  ATOM_BOOLEAN, 
+} atom_type_t;
+
+typedef struct atom {
+  atom_type_t type;
+  union {
+    char *symbol;   // For ATOM_SYMBOL
+    double number;  // For ATOM_NUMBER
+    char *string;   // For ATOM_STRING
+    bool boolean;    // For ATOM_BOOLEAN (0 or 1)
+  } value;
+} atom_t;
+
+typedef enum {
+  NODE_ATOM,
+  NODE_LIST,
 } node_type_t;
 
 typedef struct s_expression {
   node_type_t type;
   union {
-    char *atom;
+    atom_t atom;
     struct {
       struct s_expression **elements;
       size_t count;
