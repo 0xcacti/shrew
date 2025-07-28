@@ -296,3 +296,34 @@ Test(lexer_tests, it_lexes_empty_input) {
   cr_assert_str_eq(token.literal, "", "token literal should be empty");
   cr_assert_eq(lexer.position, 0, "position should be at the end of input");
 }
+
+Test(lexer_tests, it_lexes_unterminated_string) {
+  const char *input = "\"unterminated";
+  lexer_t lexer = lexer_new(input);
+  token_t token = lexer_next_token(&lexer);
+
+  cr_assert_eq(token.type, TOKEN_INVALID, "token type should be TOKEN_INVALID");
+  cr_assert_str_eq(token.literal, "unterminated",
+                   "token literal should be '\"unterminated'");
+  cr_assert_eq(lexer.position, 13, "position should be at the end of input");
+}
+
+Test(lexer_tests, it_lexes_invalid_number) {
+  char *input = "1.2.3";
+  lexer_t lexer = lexer_new(input);
+  token_t token = lexer_next_token(&lexer);
+
+  cr_assert_eq(token.type, TOKEN_INVALID, "token type should be TOKEN_INVALID");
+  cr_assert_str_eq(token.literal, "1.2.3", "token literal should be '1.2.3'");
+  cr_assert_eq(lexer.position, 5, "position should be at the end of input");
+}
+
+Test(lexer_tests, it_lexes_invalid_at_sign) {
+  const char *input = "@invalid";
+  lexer_t lexer = lexer_new(input);
+  token_t token = lexer_next_token(&lexer);
+
+  cr_assert_eq(token.type, TOKEN_INVALID, "token type should be TOKEN_INVALID");
+  cr_assert_str_eq(token.literal, "@", "token literal should be '@'");
+  cr_assert_eq(lexer.position, 1, "position should be at the end of input");
+}

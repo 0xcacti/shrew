@@ -64,10 +64,30 @@ char peek(lexer_t *lexer) {
   }
 }
 
-char *read_number(lexer_t *lexer) {
+char *read_number(lexer_t *lexer, bool *ok) {
+  *ok = true;
   size_t start_pos = lexer->position;
-  while (isdigit(lexer->ch) || lexer->ch == '.' || lexer->ch == '-') {
+  bool seen_dot = false;
+  bool seen_digit = false;
+  if (lexer->ch == '-') {
     read_char(lexer);
+  }
+
+  while (isdigit(lexer->ch) || lexer->ch == '.') {
+    if (lexer->ch == '.') {
+      if (seen_dot) {
+        *ok = false;
+      } else {
+        seen_dot = true;
+      }
+    } else {
+      seen_digit = true;
+    }
+    read_char(lexer);
+  }
+
+  if (!seen_digit) {
+    *ok = false;
   }
   return strndup(lexer->input + start_pos, lexer->position - start_pos);
 }
@@ -103,6 +123,8 @@ lexer_t lexer_new(const char *input) {
 }
 
 token_t lexer_next_token(lexer_t *lexer) {
+  bool ok;
+  char *literal;
   skip_whitespace(lexer);
   if (lexer->ch == ';') {
     skip_line_comment(lexer);
@@ -115,14 +137,24 @@ token_t lexer_next_token(lexer_t *lexer) {
       break;
     case '-':
       if (isdigit(peek(lexer)) || peek(lexer) == '.') {
-        token = token_new(TOKEN_NUMBER, read_number(lexer));
+        literal = read_number(lexer, &ok);
+        if (ok) {
+          token = token_new(TOKEN_NUMBER, literal);
+        } else {
+          token = token_new(TOKEN_INVALID, literal);
+        }
       } else {
         token = token_new(TOKEN_SYMBOL, read_symbol(lexer));
       }
       break;
     case '.': 
       if (isdigit(peek(lexer))) {
-        token = token_new(TOKEN_NUMBER, read_number(lexer));
+        literal = read_number(lexer, &ok);
+        if (ok) {
+          token = token_new(TOKEN_NUMBER, literal);
+        } else {
+          token = token_new(TOKEN_INVALID, literal);
+        }
       } else {
         token = token_new(TOKEN_DOT, ".");
       }
@@ -152,6 +184,10 @@ token_t lexer_next_token(lexer_t *lexer) {
       }
       read_char(lexer);
       break;
+    case '@':
+      token = token_new(TOKEN_INVALID, "@");
+      read_char(lexer);
+      break;
     case '#': 
       if (peek(lexer) == 't') {
         read_char(lexer);
@@ -166,18 +202,21 @@ token_t lexer_next_token(lexer_t *lexer) {
       }
       break;
     case '"': 
-      bool ok;
-      char *literal = read_string(lexer, &ok);
+      literal = read_string(lexer, &ok);
       if (ok) {
-        printf("we make it in here with string: %s\n", literal);
         token = token_new(TOKEN_STRING, literal);
       } else {
         token = token_new(TOKEN_INVALID, literal);
       }
       break;
     case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-      token = token_new(TOKEN_NUMBER, read_number(lexer));
+    case '5': case '6': case '7': case '8': case '9': 
+        literal = read_number(lexer, &ok);
+        if (ok) {
+          token = token_new(TOKEN_NUMBER, literal);
+        } else {
+          token = token_new(TOKEN_INVALID, literal);
+        }
       break;
     default: 
       token = token_new(TOKEN_SYMBOL, read_symbol(lexer));
