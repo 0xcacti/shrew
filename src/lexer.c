@@ -54,7 +54,7 @@ char *read_string(lexer_t *lexer) {
   return str;
 }
 
-int read_int(lexer_t *lexer) {
+char *read_number(lexer_t *lexer) {
   size_t start_pos = lexer->position;
   while (1) {
     read_char(lexer);
@@ -72,9 +72,29 @@ int read_int(lexer_t *lexer) {
 
   strncpy(str, lexer->input + start_pos, length);
   str[length] = '\0';
-  int val = atoi(str);
-  free(str);
-  return val;
+  return str;
+}
+
+char *read_symbol(lexer_t *lexer) {
+  size_t start_pos = lexer->position;
+  while (lexer->ch != ' ' && lexer->ch != '\t' && lexer->ch != '\n' &&
+         lexer->ch != '\r' && lexer->ch != '(' && lexer->ch != ')' &&
+         lexer->ch != '"' && lexer->ch != '\'' && lexer->ch != '@' &&
+         lexer->ch != 0) {
+    read_char(lexer);
+  }
+  size_t length = lexer->position - start_pos;
+  if (length == 0) {
+    return NULL;
+  }
+  char *str = malloc(length + 1);
+  if (!str) {
+    perror("malloc");
+    return NULL;
+  }
+  strncpy(str, lexer->input + start_pos, length);
+  str[length] = '\0';
+  return str;
 }
 
 lexer_t lexer_new(const char *input) {
@@ -123,6 +143,9 @@ token_t lexer_next_token(lexer_t *lexer) {
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
       token = token_new(TOKEN_NUMBER, read_number(lexer));
+      break;
+    default: 
+      token = token_new(TOKEN_SYMBOL, read_symbol(lexer));
       break;
   }
 
