@@ -2,7 +2,7 @@
 #include <criterion/criterion.h>
 
 Test(parser_tests, it_parses_numbers) {
-  const char *input = "123";
+  const char *input = "123\n0.134";
   lexer_t lexer = lexer_new(input);
   parser_t parser = parser_new(&lexer);
   s_expression_t **sexp = parser_parse(&parser);
@@ -12,4 +12,10 @@ Test(parser_tests, it_parses_numbers) {
   cr_assert_eq(sexp[0]->data.atom.type, ATOM_NUMBER,
                "atom type should be ATOM_NUMBER");
   cr_assert_eq(sexp[0]->data.atom.value.number, 123, "atom should be 123");
+  cr_assert_eq(sexp[1]->type, NODE_ATOM,
+               "second s_expression should be an atom");
+  cr_assert_eq(sexp[1]->data.atom.type, ATOM_NUMBER,
+               "atom type should be ATOM_NUMBER");
+  cr_assert_float_eq(sexp[1]->data.atom.value.number, 0.134, 0.001,
+                     "atom should be 0.134");
 }
