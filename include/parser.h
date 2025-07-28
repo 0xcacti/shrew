@@ -31,7 +31,6 @@ typedef struct parser {
 
 parser_t parser_new(lexer_t *lexer);
 void parser_free(parser_t *parser);
-
-s_expression_t *parse_program(
+s_expression_t **parser_parse(parser_t *parser);
 
 #endif
