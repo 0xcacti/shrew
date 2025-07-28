@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include "string.h"
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -39,40 +40,15 @@ char *read_string(lexer_t *lexer) {
     }
   }
 
-  size_t length = lexer->position - start_pos;
-  if (length == 0) {
-    return NULL;
-  }
-
-  char *str = malloc(length + 1);
-  if (!str) {
-    perror("malloc");
-    return NULL; // Memory allocation failed
-  }
-  strncpy(str, lexer->input + start_pos, length);
-  str[length] = '\0';
-  return str;
+  return strndup(lexer->input + start_pos, lexer->position - start_pos);
 }
 
 char *read_number(lexer_t *lexer) {
   size_t start_pos = lexer->position;
-  while (1) {
+  while (isdigit(lexer->ch) || lexer->ch == '.') {
     read_char(lexer);
-    if (!(lexer->ch >= '0' || lexer->ch <= '9') || lexer->ch == 0) {
-      break;
-    }
   }
-
-  size_t length = lexer->position - start_pos;
-  char *str = malloc(length + 1);
-  if (!str) {
-    perror("malloc");
-    return 0;
-  }
-
-  strncpy(str, lexer->input + start_pos, length);
-  str[length] = '\0';
-  return str;
+  return strndup(lexer->input + start_pos, lexer->position - start_pos);
 }
 
 char *read_symbol(lexer_t *lexer) {
@@ -87,14 +63,15 @@ char *read_symbol(lexer_t *lexer) {
   if (length == 0) {
     return NULL;
   }
-  char *str = malloc(length + 1);
-  if (!str) {
-    perror("malloc");
-    return NULL;
+  return strndup(lexer->input + start_pos, length);
+}
+
+char peek(lexer_t *lexer) {
+  if (lexer->read_position >= lexer->input_len) {
+    return 0;
+  } else {
+    return lexer->input[lexer->read_position];
   }
-  strncpy(str, lexer->input + start_pos, length);
-  str[length] = '\0';
-  return str;
 }
 
 lexer_t lexer_new(const char *input) {
@@ -117,14 +94,6 @@ token_t lexer_next_token(lexer_t *lexer) {
   if (lexer->ch == ';') {
     skip_line_comment(lexer);
   }
-
- //  TOKEN_EOF,
- //  TOKEN_LPAREN,
- //  TOKEN_RPAREN,
- //  TOKEN_STRING
- //  TOKEN_NUMBER, 
- //  TOKEN_SYMBOL, 
- //  TOKEN_INVALID, 
 
   token_t token = {0};
   switch (lexer->ch) {
