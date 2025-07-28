@@ -29,6 +29,8 @@ typedef struct parser {
   size_t error_capacity;
 } parser_t;
 
+void parser_add_error(parser_t *parser, const char *fmt, ...);
+void parser_clear_errors(parser_t *parser);
 parser_t parser_new(lexer_t *lexer);
 void parser_free(parser_t *parser);
 s_expression_t **parser_parse(parser_t *parser);
