@@ -327,3 +327,15 @@ Test(lexer_tests, it_lexes_invalid_at_sign) {
   cr_assert_str_eq(token.literal, "@", "token literal should be '@'");
   cr_assert_eq(lexer.position, 1, "position should be at the end of input");
 }
+
+Test(lexer_tests, it_catches_line_and_col_on_invalid) {
+  const char *input = "1.2.3";
+  lexer_t lexer = lexer_new(input);
+  token_t token = lexer_next_token(&lexer);
+
+  cr_assert_eq(token.type, TOKEN_INVALID, "token type should be TOKEN_INVALID");
+  cr_assert_str_eq(token.literal, "1.2.3", "token literal should be '1.2.3'");
+  cr_assert_eq(lexer.position, 5, "position should be at the end of input");
+  cr_assert_eq(lexer.line, 1, "line number should be 1");
+  cr_assert_eq(lexer.column, 6, "column number should be 6");
+}

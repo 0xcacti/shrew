@@ -122,8 +122,11 @@ lexer_t lexer_new(const char *input) {
     .read_position = 0,
     .ch = 0,
     .input = input,
-    .input_len = input_len
+    .input_len = input_len,
+    .line = 1,
+    .column = 0
   };
+  // clang-format on
 
   read_char(&lexer);
   return lexer;
@@ -139,109 +142,116 @@ token_t lexer_next_token(lexer_t *lexer) {
 
   token_t token = {0};
   switch (lexer->ch) {
-    case 0: 
-      token = token_new(TOKEN_EOF, "");
-      break;
-    case '-':
-      if (isdigit(peek(lexer)) || peek(lexer) == '.') {
-        literal = read_number(lexer, &ok);
-        if (ok) {
-          token = token_new(TOKEN_NUMBER, literal);
-        } else {
-          token = token_new(TOKEN_INVALID, literal);
-          token.line = lexer->line;
-          token.column = lexer->column;
-        }
-      } else {
-        token = token_new(TOKEN_SYMBOL, read_symbol(lexer));
-      }
-      break;
-    case '.': 
-      if (isdigit(peek(lexer))) {
-        literal = read_number(lexer, &ok);
-        if (ok) {
-          token = token_new(TOKEN_NUMBER, literal);
-        } else {
-          token = token_new(TOKEN_INVALID, literal);
-          token.line = lexer->line;
-          token.column = lexer->column;
-        }
-      } else {
-        token = token_new(TOKEN_DOT, ".");
-      }
-      break;
-    case '(': 
-      token = token_new(TOKEN_LPAREN, "(");
-      read_char(lexer);
-      break;
-    case ')':
-      token = token_new(TOKEN_RPAREN, ")");
-      read_char(lexer);
-      break;
-    case '\'': 
-      token = token_new(TOKEN_QUOTE, "'");
-      read_char(lexer);
-      break;
-    case '`': 
-      token = token_new(TOKEN_QUASIQUOTE, "`");
-      read_char(lexer);
-      break;
-    case ',':
-      if (peek(lexer) == '@') {
-        read_char(lexer);
-        token = token_new(TOKEN_UNQUOTE_SPLICING, ",@");
-      } else {
-        token = token_new(TOKEN_UNQUOTE, ",");
-      }
-      read_char(lexer);
-      break;
-    case '@':
-      token = token_new(TOKEN_INVALID, "@");
-      token.line = lexer->line;
-      token.column = lexer->column;
-      read_char(lexer);
-      break;
-    case '#': 
-      if (peek(lexer) == 't') {
-        read_char(lexer);
-        read_char(lexer);
-        token = token_new(TOKEN_TRUE, "#t");
-      } else if (peek(lexer) == 'f') {
-        read_char(lexer);
-        read_char(lexer);
-        token = token_new(TOKEN_FALSE, "#f");
-      } else {
-        token = token_new(TOKEN_INVALID, read_symbol(lexer));
-        token.line = lexer->line;
-        token.column = lexer->column;
-      }
-      break;
-    case '"': 
-      literal = read_string(lexer, &ok);
+  case 0:
+    token = token_new(TOKEN_EOF, "");
+    break;
+  case '-':
+    if (isdigit(peek(lexer)) || peek(lexer) == '.') {
+      literal = read_number(lexer, &ok);
       if (ok) {
-        token = token_new(TOKEN_STRING, literal);
+        token = token_new(TOKEN_NUMBER, literal);
       } else {
         token = token_new(TOKEN_INVALID, literal);
         token.line = lexer->line;
         token.column = lexer->column;
       }
-      break;
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9': 
-        literal = read_number(lexer, &ok);
-        if (ok) {
-          token = token_new(TOKEN_NUMBER, literal);
-        } else {
-          token = token_new(TOKEN_INVALID, literal);
-          token.line = lexer->line;
-          token.column = lexer->column;
-        }
-      break;
-    default: 
+    } else {
       token = token_new(TOKEN_SYMBOL, read_symbol(lexer));
-      break;
+    }
+    break;
+  case '.':
+    if (isdigit(peek(lexer))) {
+      literal = read_number(lexer, &ok);
+      if (ok) {
+        token = token_new(TOKEN_NUMBER, literal);
+      } else {
+        token = token_new(TOKEN_INVALID, literal);
+        token.line = lexer->line;
+        token.column = lexer->column;
+      }
+    } else {
+      token = token_new(TOKEN_DOT, ".");
+    }
+    break;
+  case '(':
+    token = token_new(TOKEN_LPAREN, "(");
+    read_char(lexer);
+    break;
+  case ')':
+    token = token_new(TOKEN_RPAREN, ")");
+    read_char(lexer);
+    break;
+  case '\'':
+    token = token_new(TOKEN_QUOTE, "'");
+    read_char(lexer);
+    break;
+  case '`':
+    token = token_new(TOKEN_QUASIQUOTE, "`");
+    read_char(lexer);
+    break;
+  case ',':
+    if (peek(lexer) == '@') {
+      read_char(lexer);
+      token = token_new(TOKEN_UNQUOTE_SPLICING, ",@");
+    } else {
+      token = token_new(TOKEN_UNQUOTE, ",");
+    }
+    read_char(lexer);
+    break;
+  case '@':
+    token = token_new(TOKEN_INVALID, "@");
+    token.line = lexer->line;
+    token.column = lexer->column;
+    read_char(lexer);
+    break;
+  case '#':
+    if (peek(lexer) == 't') {
+      read_char(lexer);
+      read_char(lexer);
+      token = token_new(TOKEN_TRUE, "#t");
+    } else if (peek(lexer) == 'f') {
+      read_char(lexer);
+      read_char(lexer);
+      token = token_new(TOKEN_FALSE, "#f");
+    } else {
+      token = token_new(TOKEN_INVALID, read_symbol(lexer));
+      token.line = lexer->line;
+      token.column = lexer->column;
+    }
+    break;
+  case '"':
+    literal = read_string(lexer, &ok);
+    if (ok) {
+      token = token_new(TOKEN_STRING, literal);
+    } else {
+      token = token_new(TOKEN_INVALID, literal);
+      token.line = lexer->line;
+      token.column = lexer->column;
+    }
+    break;
+  case '0':
+  case '1':
+  case '2':
+  case '3':
+  case '4':
+  case '5':
+  case '6':
+  case '7':
+  case '8':
+  case '9':
+    literal = read_number(lexer, &ok);
+    if (ok) {
+      token = token_new(TOKEN_NUMBER, literal);
+    } else {
+      token = token_new(TOKEN_INVALID, literal);
+      token.line = lexer->line;
+      token.column = lexer->column;
+    }
+    break;
+  default:
+    token = token_new(TOKEN_SYMBOL, read_symbol(lexer));
+    break;
   }
 
   return token;
 }
-
