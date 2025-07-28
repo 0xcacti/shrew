@@ -4,6 +4,7 @@
 typedef enum token_type {
   TOKEN_INVALID, 
   TOKEN_EOF,
+  TOKEN_DOT,
   TOKEN_LPAREN,
   TOKEN_RPAREN,
   TOKEN_SYMBOL, 
