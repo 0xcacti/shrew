@@ -156,3 +156,47 @@ Test(lexer_test, it_lexes_negative_numbers) {
   cr_assert_eq(lexer.position, 4,
                "position should still be at the end of input");
 }
+
+Test(lexer_test, it_lexes_float_numbers) {
+  const char *input = "3.14";
+  lexer_t lexer = lexer_new(input);
+  token_t token = lexer_next_token(&lexer);
+
+  cr_assert_eq(token.type, TOKEN_NUMBER, "token type should be TOKEN_NUMBER");
+  cr_assert_str_eq(token.literal, "3.14", "token literal should be '3.14'");
+  cr_assert_eq(lexer.position, 4, "position should be at the end of input");
+
+  token = lexer_next_token(&lexer);
+  cr_assert_eq(token.type, TOKEN_EOF, "token type should be TOKEN_EOF");
+  cr_assert_str_eq(token.literal, "", "token literal should be empty");
+
+  input = ".99";
+  lexer = lexer_new(input);
+  token = lexer_next_token(&lexer);
+  cr_assert_eq(token.type, TOKEN_NUMBER, "token type should be TOKEN_NUMBER");
+  cr_assert_str_eq(token.literal, ".99", "token literal should be '.99'");
+  cr_assert_eq(lexer.position, 3, "position should be at the end of input");
+  token = lexer_next_token(&lexer);
+  cr_assert_eq(token.type, TOKEN_EOF, "token type should be TOKEN_EOF");
+  cr_assert_str_eq(token.literal, "", "token literal should be empty");
+
+  input = "-0.123";
+  lexer = lexer_new(input);
+  token = lexer_next_token(&lexer);
+  cr_assert_eq(token.type, TOKEN_NUMBER, "token type should be TOKEN_NUMBER");
+  cr_assert_str_eq(token.literal, "-0.123", "token literal should be '-0.123'");
+  cr_assert_eq(lexer.position, 6, "position should be at the end of input");
+  token = lexer_next_token(&lexer);
+  cr_assert_eq(token.type, TOKEN_EOF, "token type should be TOKEN_EOF");
+  cr_assert_str_eq(token.literal, "", "token literal should be empty");
+
+  input = "-.456";
+  lexer = lexer_new(input);
+  token = lexer_next_token(&lexer);
+  cr_assert_eq(token.type, TOKEN_NUMBER, "token type should be TOKEN_NUMBER");
+  cr_assert_str_eq(token.literal, "-.456", "token literal should be '-.456'");
+  cr_assert_eq(lexer.position, 5, "position should be at the end of input");
+  token = lexer_next_token(&lexer);
+  cr_assert_eq(token.type, TOKEN_EOF, "token type should be TOKEN_EOF");
+  cr_assert_str_eq(token.literal, "", "token literal should be empty");
+}
