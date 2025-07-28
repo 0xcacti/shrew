@@ -142,8 +142,18 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
 
 s_expression_t *parser_parse_s_expression(parser_t *parser) {
   switch (parser->current_token.type) {
-  case TOKEN_LPAREN:
-    parser_parse_list(parser, out);
+  case TOKEN_SYMBOL:
+    return parser_parse_atom(parser);
+  case TOKEN_NUMBER:
+    return parser_parse_atom(parser);
+  case TOKEN_STRING:
+    return parser_parse_atom(parser);
+  case TOKEN_TRUE:
+  case TOKEN_FALSE:
+    return parser_parse_atom(parser);
+  default:
+    fprintf(stderr, "not implemented yet\n");
+    return NULL;
   }
 }
 
