@@ -14,6 +14,8 @@ typedef enum token_type {
   TOKEN_UNQUOTE,
   TOKEN_QUASIQUOTE,
   TOKEN_UNQUOTE_SPLICING,
+  TOKEN_TRUE, 
+  TOKEN_FALSE, 
 } token_type_t;
 
 

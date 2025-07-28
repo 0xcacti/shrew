@@ -261,3 +261,38 @@ Test(lexer_tests, it_lexes_unquote_splicing) {
   cr_assert_eq(t.type, TOKEN_SYMBOL, "next token should be symbol");
   cr_assert_str_eq(t.literal, "rest", "literal should be \"rest\"");
 }
+
+Test(lexer_tests, it_lexes_true_and_false) {
+  const char *input = "#t #f";
+  lexer_t lexer = lexer_new(input);
+
+  token_t t;
+
+  t = lexer_next_token(&lexer);
+  cr_assert_eq(t.type, TOKEN_TRUE, "first token should be TOKEN_TRUE");
+  cr_assert_str_eq(t.literal, "#t", "literal should be \"#t\"");
+
+  t = lexer_next_token(&lexer);
+  cr_assert_eq(t.type, TOKEN_FALSE, "next token should be TOKEN_FALSE");
+  cr_assert_str_eq(t.literal, "#f", "literal should be \"#f\"");
+}
+
+Test(lexer_tests, it_lexes_invalid_tokens) {
+  const char *input = "#~";
+  lexer_t lexer = lexer_new(input);
+  token_t token = lexer_next_token(&lexer);
+
+  cr_assert_eq(token.type, TOKEN_INVALID, "token type should be TOKEN_INVALID");
+  cr_assert_str_eq(token.literal, "#~", "token literal should be '#~'");
+  cr_assert_eq(lexer.position, 2, "position should be at the end of input");
+}
+
+Test(lexer_tests, it_lexes_empty_input) {
+  const char *input = "";
+  lexer_t lexer = lexer_new(input);
+  token_t token = lexer_next_token(&lexer);
+
+  cr_assert_eq(token.type, TOKEN_EOF, "token type should be TOKEN_EOF");
+  cr_assert_str_eq(token.literal, "", "token literal should be empty");
+  cr_assert_eq(lexer.position, 0, "position should be at the end of input");
+}

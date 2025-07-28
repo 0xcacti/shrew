@@ -31,18 +31,29 @@ void skip_line_comment(lexer_t *lexer) {
   }
 }
 
-char *read_string(lexer_t *lexer) {
-  size_t start_pos = lexer->position + 1;
-  while (1) {
+char *read_string(lexer_t *lexer, bool *ok) {
+  read_char(lexer);
+
+  size_t start = lexer->position;
+
+  while (lexer->ch != '"' && lexer->ch != 0) {
     read_char(lexer);
-    if (lexer->ch == '"' || lexer->ch == 0) {
-      break;
-    }
   }
 
-  char *str = strndup(lexer->input + start_pos, lexer->position - start_pos);
-  read_char(lexer);
-  return str;
+  if (lexer->ch == '"') {
+    *ok = true;
+  } else {
+    *ok = false;
+  }
+
+  size_t end = lexer->position;
+  char *lit = strndup(lexer->input + start, end - start);
+
+  if (*ok) {
+    read_char(lexer);
+  }
+
+  return lit;
 }
 
 char peek(lexer_t *lexer) {
@@ -141,8 +152,28 @@ token_t lexer_next_token(lexer_t *lexer) {
       }
       read_char(lexer);
       break;
+    case '#': 
+      if (peek(lexer) == 't') {
+        read_char(lexer);
+        read_char(lexer);
+        token = token_new(TOKEN_TRUE, "#t");
+      } else if (peek(lexer) == 'f') {
+        read_char(lexer);
+        read_char(lexer);
+        token = token_new(TOKEN_FALSE, "#f");
+      } else {
+        token = token_new(TOKEN_INVALID, read_symbol(lexer));
+      }
+      break;
     case '"': 
-      token = token_new(TOKEN_STRING, read_string(lexer));
+      bool ok;
+      char *literal = read_string(lexer, &ok);
+      if (ok) {
+        printf("we make it in here with string: %s\n", literal);
+        token = token_new(TOKEN_STRING, literal);
+      } else {
+        token = token_new(TOKEN_INVALID, literal);
+      }
       break;
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
