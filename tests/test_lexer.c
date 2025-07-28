@@ -200,3 +200,64 @@ Test(lexer_test, it_lexes_float_numbers) {
   cr_assert_eq(token.type, TOKEN_EOF, "token type should be TOKEN_EOF");
   cr_assert_str_eq(token.literal, "", "token literal should be empty");
 }
+
+Test(lexer_tests, it_lexes_quote) {
+  const char *input = "'foo";
+  lexer_t lexer = lexer_new(input);
+
+  token_t t;
+
+  t = lexer_next_token(&lexer);
+  cr_assert_eq(t.type, TOKEN_QUOTE, "first token should be TOKEN_QUOTE");
+  cr_assert_str_eq(t.literal, "'", "first literal should be \"'\"");
+
+  t = lexer_next_token(&lexer);
+  cr_assert_eq(t.type, TOKEN_SYMBOL, "second token should be symbol");
+  cr_assert_str_eq(t.literal, "foo", "second literal should be \"foo\"");
+}
+
+Test(lexer_tests, it_lexes_quasiquote) {
+  const char *input = "`(a b)";
+  lexer_t lexer = lexer_new(input);
+
+  token_t t;
+
+  t = lexer_next_token(&lexer);
+  cr_assert_eq(t.type, TOKEN_QUASIQUOTE,
+               "first token should be TOKEN_QUASIQUOTE");
+  cr_assert_str_eq(t.literal, "`", "literal should be \"`\"");
+
+  t = lexer_next_token(&lexer);
+  cr_assert_eq(t.type, TOKEN_LPAREN, "next token should be LPAREN");
+}
+
+Test(lexer_tests, it_lexes_unquote) {
+  const char *input = ",x";
+  lexer_t lexer = lexer_new(input);
+
+  token_t t;
+
+  t = lexer_next_token(&lexer);
+  cr_assert_eq(t.type, TOKEN_UNQUOTE, "first token should be TOKEN_UNQUOTE");
+  cr_assert_str_eq(t.literal, ",", "literal should be \",\"");
+
+  t = lexer_next_token(&lexer);
+  cr_assert_eq(t.type, TOKEN_SYMBOL, "next token should be symbol");
+  cr_assert_str_eq(t.literal, "x", "literal should be \"x\"");
+}
+
+Test(lexer_tests, it_lexes_unquote_splicing) {
+  const char *input = ",@rest";
+  lexer_t lexer = lexer_new(input);
+
+  token_t t;
+
+  t = lexer_next_token(&lexer);
+  cr_assert_eq(t.type, TOKEN_UNQUOTE_SPLICING,
+               "first token should be TOKEN_UNQUOTE_SPLICING");
+  cr_assert_str_eq(t.literal, ",@", "literal should be \",@\"");
+
+  t = lexer_next_token(&lexer);
+  cr_assert_eq(t.type, TOKEN_SYMBOL, "next token should be symbol");
+  cr_assert_str_eq(t.literal, "rest", "literal should be \"rest\"");
+}
