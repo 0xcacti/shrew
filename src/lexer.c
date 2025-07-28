@@ -124,6 +124,23 @@ token_t lexer_next_token(lexer_t *lexer) {
       token = token_new(TOKEN_RPAREN, ")");
       read_char(lexer);
       break;
+    case '\'': 
+      token = token_new(TOKEN_QUOTE, "'");
+      read_char(lexer);
+      break;
+    case '`': 
+      token = token_new(TOKEN_QUASIQUOTE, "`");
+      read_char(lexer);
+      break;
+    case ',':
+      if (peek(lexer) == '@') {
+        read_char(lexer);
+        token = token_new(TOKEN_UNQUOTE_SPLICING, ",@");
+      } else {
+        token = token_new(TOKEN_UNQUOTE, ",");
+      }
+      read_char(lexer);
+      break;
     case '"': 
       token = token_new(TOKEN_STRING, read_string(lexer));
       break;
