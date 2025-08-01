@@ -112,19 +112,16 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
     errno = 0;
     double v = strtod(literal, &endptr);
 
-    // 1) No digits were found?
     if (endptr == literal) {
       parser_add_error(parser, "invalid number literal: \"%s\"", literal);
       return NULL;
     }
 
-    // 2) Extra junk after the number?
     if (*endptr != '\0') {
       parser_add_error(parser, "invalid number literal: \"%s\"", literal);
       return NULL;
     }
 
-    // 3) Range errors?
     if (errno == ERANGE) {
       parser_add_error(parser, "number out of range: \"%s\"", literal);
       return NULL;

@@ -41,26 +41,100 @@ void skip_line_comment(lexer_t *lexer) {
 char *read_string(lexer_t *lexer, bool *ok) {
   read_char(lexer);
 
-  size_t start = lexer->position;
+  size_t cap = 16, len = 0;
+  char *buf = malloc(cap);
+  if (!buf) {
+    *ok = false;
+    return NULL;
+  }
 
-  while (lexer->ch != '"' && lexer->ch != 0) {
+  bool terminated = false;
+
+  while (lexer->ch != 0) {
+    if (lexer->ch == '"') {
+      terminated = true;
+      break;
+    }
+
+    if (lexer->ch == '\\') {
+      read_char(lexer);
+
+      char translated;
+      bool recognised = true;
+      switch (lexer->ch) {
+      case 'n':
+        translated = '\n';
+        break;
+      case 't':
+        translated = '\t';
+        break;
+      case 'r':
+        translated = '\r';
+        break;
+      case '"':
+        translated = '"';
+        break;
+      case '\\':
+        translated = '\\';
+        break;
+      case '0':
+        translated = '\0';
+        break;
+      default:
+        recognised = false;
+      }
+
+      if (recognised) {
+
+        if (len + 1 >= cap) {
+          cap *= 2;
+          buf = realloc(buf, cap);
+        }
+        if (!buf) {
+          *ok = false;
+          return NULL;
+        }
+        buf[len++] = translated;
+        read_char(lexer);
+        continue;
+      }
+
+      if (len + 2 >= cap) {
+        cap *= 2;
+        buf = realloc(buf, cap);
+      }
+      if (!buf) {
+        *ok = false;
+        return NULL;
+      }
+      buf[len++] = '\\';
+      buf[len++] = lexer->ch;
+      read_char(lexer);
+      continue;
+    }
+
+    if (len + 1 >= cap) {
+      cap *= 2;
+      buf = realloc(buf, cap);
+    }
+    if (!buf) {
+      *ok = false;
+      return NULL;
+    }
+    buf[len++] = lexer->ch;
     read_char(lexer);
   }
 
-  if (lexer->ch == '"') {
+  buf[len] = '\0';
+
+  if (terminated) {
     *ok = true;
+    read_char(lexer);
   } else {
     *ok = false;
   }
 
-  size_t end = lexer->position;
-  char *lit = strndup(lexer->input + start, end - start);
-
-  if (*ok) {
-    read_char(lexer);
-  }
-
-  return lit;
+  return buf;
 }
 
 char peek(lexer_t *lexer) {
