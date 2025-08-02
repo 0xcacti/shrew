@@ -79,23 +79,44 @@ void parser_next(parser_t *parser) {
   parser->next_token = lexer_next_token(parser->lexer);
 }
 
-s_expression_t *parser_parse_list(parser_t *parser) {}
+s_expression_t *parser_parse_list(parser_t *parser) {
+  if (parser->current_token.type != TOKEN_LPAREN) {
+    parser_add_error(
+        parser, "internal: parser_parse_list called when current token is '%s'",
+        parser->current_token.literal);
+    return NULL;
+  }
+  parser_next(parser);
 
-// typedef enum {
-//   ATOM,
-//   LIST,
-// } node_type_t;
-//
-// typedef struct s_expression {
-//   node_type_t type;
-//   union {
-//     char *atom;
-//     struct {
-//       struct s_expression **elements;
-//       size_t count;
-//     } list;
-//   } data;
-// } s_expression_t;
+  size_t capacity = DEFAULT_EXPRESSION_COUNT;
+  size_t count = 0;
+  s_expression_t **elements = malloc(capacity * sizeof(s_expression_t));
+  if (!elements) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+
+  bool saw_dot = false;
+  s_expression_t *dotted_tail = NULL;
+  while (parser->current_token.type != TOKEN_RPAREN) {
+    if (parser->current_token.type == TOKEN_EOF) {
+      parser_add_error(parser, "unexpected end-of-file while parsing list");
+      free(elements);
+      return NULL;
+    }
+  }
+
+  if (parser->current_token.type == TOKEN_DOT) {
+    if (saw_dot) {
+      parser_add_error(parser, "multiple dots in list");
+      free(elements);
+      return NULL;
+    }
+    saw_dot = true;
+    parser_next(parser);
+    dotted_tail = parser_parse_s
+  }
+}
 
 s_expression_t *parser_parse_atom(parser_t *parser) {
   atom_t atom = {0};
