@@ -34,6 +34,7 @@ typedef struct s_expression {
     struct {
       struct s_expression **elements;
       size_t count;
+      struct s_expression *tail;
     } list;
   } data;
 } s_expression_t; 
