@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 const int DEFAULT_EXPRESSION_COUNT = 16;
+static s_expression_t *parser_parse_s_expression(parser_t *parser);
 
 static void grow_error_capacity(parser_t *parser) {
   size_t new_cap = parser->error_capacity ? parser->error_capacity * 2 : 4;
@@ -90,7 +91,7 @@ s_expression_t *parser_parse_list(parser_t *parser) {
 
   size_t capacity = DEFAULT_EXPRESSION_COUNT;
   size_t count = 0;
-  s_expression_t **elements = malloc(capacity * sizeof(s_expression_t));
+  s_expression_t **elements = malloc(capacity * sizeof(*elements));
   if (!elements) {
     perror("malloc");
     exit(EXIT_FAILURE);
@@ -104,18 +105,63 @@ s_expression_t *parser_parse_list(parser_t *parser) {
       free(elements);
       return NULL;
     }
-  }
+    if (parser->current_token.type == TOKEN_DOT) {
+      if (saw_dot) {
+        parser_add_error(parser, "multiple dots in list");
+        free(elements);
+        return NULL;
+      }
+      saw_dot = true;
+      parser_next(parser);
+      dotted_tail = parser_parse_s_expression(parser);
+      if (!dotted_tail) {
+        free(elements);
+        return NULL;
+      }
 
-  if (parser->current_token.type == TOKEN_DOT) {
-    if (saw_dot) {
-      parser_add_error(parser, "multiple dots in list");
+      if (parser->current_token.type != TOKEN_RPAREN) {
+        parser_add_error(parser, "expected ')' after dotted tail");
+        free(elements);
+        return NULL;
+      }
+      break;
+    }
+
+    s_expression_t *element = parser_parse_s_expression(parser);
+    if (!element) {
       free(elements);
       return NULL;
     }
-    saw_dot = true;
+
+    if (count == capacity) {
+      capacity *= 2;
+      elements = realloc(elements, capacity * sizeof(s_expression_t *));
+      if (!elements) {
+        perror("realloc");
+        exit(EXIT_FAILURE);
+      }
+    }
+    elements[count++] = element;
     parser_next(parser);
-    dotted_tail = parser_parse_s
   }
+
+  if (parser->current_token.type != TOKEN_RPAREN) {
+    parser_add_error(parser, "expected ')' but found '%s'",
+                     parser->current_token.literal);
+    free(elements);
+    return NULL;
+  }
+
+  s_expression_t *list_sexp = malloc(sizeof(s_expression_t));
+  if (!list_sexp) {
+    perror("malloc");
+    free(elements);
+    exit(EXIT_FAILURE);
+  }
+  list_sexp->type = NODE_LIST;
+  list_sexp->data.list.elements = elements;
+  list_sexp->data.list.count = count;
+  return list_sexp;
 }
 
 s_expression_t *parser_parse_atom(parser_t *parser) {
@@ -193,6 +239,8 @@ s_expression_t *parser_parse_s_expression(parser_t *parser) {
   case TOKEN_TRUE:
   case TOKEN_FALSE:
     return parser_parse_atom(parser);
+  case TOKEN_LPAREN:
+    return parser_parse_list(parser);
   default:
     fprintf(stderr, "not implemented yet\n");
     return NULL;
