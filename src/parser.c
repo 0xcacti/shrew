@@ -251,6 +251,14 @@ s_expression_t *parser_parse_s_expression(parser_t *parser) {
     return parser_parse_atom(parser);
   case TOKEN_LPAREN:
     return parser_parse_list(parser);
+  case TOKEN_RPAREN:
+    parser_add_error(parser, "unexpected ')' at %zu:%zu",
+                     parser->current_token.line, parser->current_token.column);
+    return NULL;
+  case TOKEN_EOF:
+    parser_add_error(parser, "unexpected end-of-file at %zu:%zu",
+                     parser->current_token.line, parser->current_token.column);
+    return NULL;
   case TOKEN_INVALID:
     parser_add_error(parser, "invalid token '%s' at %zu:%zu",
                      parser->current_token.literal, parser->current_token.line,
