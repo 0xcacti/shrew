@@ -107,9 +107,6 @@ Test(parser_tests, it_parses_lists) {
                "third element of first list should be a number atom");
   cr_assert_float_eq(sexp[0]->data.list.elements[2]->data.atom.value.number, 3,
                      0.001, "third element of first list should be 3");
-  printf("we get to here\n");
-  printf("sexp[1]->type: %d\n", sexp[1]->type);
-
   cr_assert_eq(sexp[1]->type, NODE_LIST,
                "second s_expression should be a list");
 
@@ -154,4 +151,65 @@ Test(parser_tests, it_parses_lists) {
   for (size_t i = 0; i < parser.error_count; i++) {
     fprintf(stderr, "Error: %s\n", parser.errors[i]);
   }
+}
+
+Test(parser_tests, it_parses_empty_and_nested_empty_lists) {
+  lexer_t lx = lexer_new("() (())");
+  parser_t p = parser_new(&lx);
+  s_expression_t **sx = parser_parse(&p);
+
+  cr_assert_eq(sx[0]->data.list.count, 0, "empty list has no elements");
+  cr_assert_eq(sx[1]->data.list.count, 1);
+  cr_assert_eq(sx[1]->data.list.elements[0]->data.list.count, 0);
+}
+
+Test(parser_tests, it_handles_many_elements) {
+  char buf[256] = "(";
+  for (int i = 0; i < 40; i++)
+    strcat(buf, " a"); // "( a a … )"
+  strcat(buf, ")");
+
+  lexer_t lx = lexer_new(buf);
+  parser_t p = parser_new(&lx);
+  s_expression_t **sx = parser_parse(&p);
+
+  cr_assert_eq(sx[0]->data.list.count, 40);
+  cr_assert_eq(p.error_count, 0);
+}
+
+Test(parser_error_tests, eof_in_list) {
+  lexer_t lx = lexer_new("(1 2");
+  parser_t p = parser_new(&lx);
+  parser_parse(&p);
+
+  cr_assert_gt(p.error_count, 0);
+  cr_assert(strstr(p.errors[0], "unexpected end-of-file"));
+}
+
+Test(parser_error_tests, stray_dot) {
+  lexer_t lx = lexer_new("(1 . 2 3)");
+  parser_t p = parser_new(&lx);
+  parser_parse(&p);
+
+  cr_assert_gt(p.error_count, 0);
+  cr_assert(strstr(p.errors[0], "after dotted tail"));
+}
+
+Test(parser_error_tests, multiple_dots) {
+  lexer_t lx = lexer_new("(1 . 2 . 3)");
+  parser_t p = parser_new(&lx);
+  parser_parse(&p);
+  printf("we get through parsing\n");
+
+  cr_assert_gt(p.error_count, 0);
+  printf("Error: %s\n", p.errors[0]);
+  cr_assert(strstr(p.errors[0], "multiple dots"));
+}
+
+Test(parser_error_tests, unterminated_string) {
+  lexer_t lx = lexer_new("\"oops");
+  parser_t p = parser_new(&lx);
+  parser_parse(&p);
+
+  cr_assert_gt(p.error_count, 0);
 }

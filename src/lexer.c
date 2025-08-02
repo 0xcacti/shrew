@@ -245,6 +245,7 @@ token_t lexer_next_token(lexer_t *lexer) {
       }
     } else {
       token = token_new(TOKEN_DOT, ".");
+      read_char(lexer);
     }
     break;
   case '(':

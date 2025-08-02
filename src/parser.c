@@ -118,10 +118,20 @@ s_expression_t *parser_parse_list(parser_t *parser) {
         free(elements);
         return NULL;
       }
+      parser_next(parser);
 
       if (parser->current_token.type != TOKEN_RPAREN) {
-        parser_add_error(parser, "expected ')' after dotted tail");
+        if (parser->current_token.type == TOKEN_DOT) {
+          parser_add_error(parser, "multiple dots in list");
+        } else {
+          parser_add_error(parser, "expected token after dotted tail");
+        }
         free(elements);
+
+        while (parser->current_token.type != TOKEN_RPAREN &&
+               parser->current_token.type != TOKEN_EOF) {
+          parser_next(parser);
+        }
         return NULL;
       }
       break;
@@ -241,8 +251,14 @@ s_expression_t *parser_parse_s_expression(parser_t *parser) {
     return parser_parse_atom(parser);
   case TOKEN_LPAREN:
     return parser_parse_list(parser);
+  case TOKEN_INVALID:
+    parser_add_error(parser, "invalid token '%s' at %zu:%zu",
+                     parser->current_token.literal, parser->current_token.line,
+                     parser->current_token.column);
+    return NULL;
   default:
     fprintf(stderr, "not implemented yet\n");
+    exit(EXIT_FAILURE);
     return NULL;
   }
 }
