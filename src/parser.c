@@ -267,6 +267,7 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
     }
     quote_symbol->type = NODE_ATOM;
     quote_symbol->data.atom = quote_atom;
+
     switch (quoted->type) {
     case NODE_ATOM: {
       s_expression_t *prev_atom = malloc(sizeof(s_expression_t));
@@ -292,8 +293,12 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
       return quoted;
     }
     case NODE_LIST:
-      printf("NOT IMPLEMENTED YET\n");
-      exit(EXIT_FAILURE);
+      s_expression_t *prev_list = malloc(sizeof(s_expression_t));
+      if (!prev_list) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+      }
+      memcpy(prev_list, quoted, sizeof(s_expression_t));
     }
 
   default:
