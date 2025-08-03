@@ -111,6 +111,12 @@ s_expression_t *parser_parse_list(parser_t *parser) {
         free(elements);
         return NULL;
       }
+      s_expression_t *last_elem = elements[count - 1];
+      if (!last_elem) {
+        parser_add_error(parser, "leading dot in list");
+        free(elements);
+        return NULL;
+      }
       saw_dot = true;
       parser_next(parser);
       dotted_tail = parser_parse_s_expression(parser);
@@ -171,6 +177,9 @@ s_expression_t *parser_parse_list(parser_t *parser) {
   list_sexp->type = NODE_LIST;
   list_sexp->data.list.elements = elements;
   list_sexp->data.list.count = count;
+  if (dotted_tail) {
+    list_sexp->data.list.tail = dotted_tail;
+  }
   return list_sexp;
 }
 

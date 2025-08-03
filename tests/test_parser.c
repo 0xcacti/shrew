@@ -214,28 +214,23 @@ Test(parser_error_tests, multiple_dots) {
   cr_assert(strstr(p.errors[0], "multiple dots"));
 }
 
-// Test(parser_tests, it_parses_simple_dotted_pair) {
-//   lexer_t lx = lexer_new("(a . b)");
-//   parser_t p = parser_new(&lx);
-//   s_expression_t **sx = parser_parse(&p);
-//
-//   cr_assert_eq(p.error_count, 0);
-//   /* one top-level list */
-//   cr_assert_eq(sx[0]->type, NODE_LIST);
-//   cr_assert_eq(sx[0]->data.list.count, 1); /* only the CAR stored */
-//   /* dotted tail points at a symbol 'b' */
-//   cr_assert_eq(sx[0]->data.list.elements[0]->data.atom.value.symbol, "a");
-//   /* however you expose the tail—adapt if you add a `.tail` field */
-//   /* e.g.
-//   cr_assert_str_eq(sx[0]->data.list.tail->data.atom.value.symbol,"b");
-//    */
-// }
-//
-// Test(parser_error_tests, dot_before_any_element) {
-//   lexer_t lx = lexer_new("( . 1)");
-//   parser_t p = parser_new(&lx);
-//   parser_parse(&p);
-//
-//   cr_assert_gt(p.error_count, 0);
-//   cr_assert(strstr(p.errors[0], "multiple dots"));
-// }
+Test(parser_tests, it_parses_simple_dotted_pair) {
+  lexer_t lx = lexer_new("(a . b)");
+  parser_t p = parser_new(&lx);
+  s_expression_t **sx = parser_parse(&p);
+
+  cr_assert_eq(p.error_count, 0);
+  /* one top-level list */
+  cr_assert_eq(sx[0]->type, NODE_LIST);
+  cr_assert_eq(sx[0]->data.list.count, 1);
+  cr_assert_str_eq(sx[0]->data.list.tail->data.atom.value.symbol, "b");
+}
+
+Test(parser_error_tests, dot_before_any_element) {
+  lexer_t lx = lexer_new("( . 1)");
+  parser_t p = parser_new(&lx);
+  parser_parse(&p);
+
+  cr_assert_gt(p.error_count, 0);
+  cr_assert(strstr(p.errors[0], "leading dot in list"));
+}
