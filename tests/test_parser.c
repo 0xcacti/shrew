@@ -234,3 +234,12 @@ Test(parser_error_tests, dot_before_any_element) {
   cr_assert_gt(p.error_count, 0);
   cr_assert(strstr(p.errors[0], "leading dot in list"));
 }
+
+Test(parser_error_tests, dot_outside_list) {
+  lexer_t lx = lexer_new("(+ 1 3) . (- 3 1)");
+  parser_t p = parser_new(&lx);
+  parser_parse(&p);
+
+  cr_assert_gt(p.error_count, 0);
+  cr_assert(strstr(p.errors[0], "saw dot outside of list"));
+}

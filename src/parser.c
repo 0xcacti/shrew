@@ -273,6 +273,11 @@ s_expression_t *parser_parse_s_expression(parser_t *parser) {
                      parser->current_token.literal, parser->current_token.line,
                      parser->current_token.column);
     return NULL;
+  case TOKEN_DOT:
+    parser_add_error(parser, "saw dot outside of list at %zu:%zu",
+                     parser->current_token.literal, parser->current_token.line,
+                     parser->current_token.column);
+    return NULL;
   default:
     fprintf(stderr, "not implemented yet\n");
     exit(EXIT_FAILURE);

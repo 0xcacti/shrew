@@ -13,8 +13,8 @@ typedef enum token_type {
   TOKEN_FALSE, 
   TOKEN_INVALID, 
   TOKEN_EOF,
-
   TOKEN_DOT,
+
   TOKEN_QUOTE,
   TOKEN_UNQUOTE,
   TOKEN_QUASIQUOTE,
