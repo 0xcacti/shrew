@@ -289,6 +289,7 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
 
       quoted->data.list.count = 2;
       quoted->data.list.elements = elements;
+      return quoted;
     }
     case NODE_LIST:
       printf("NOT IMPLEMENTED YET\n");
@@ -333,7 +334,7 @@ s_expression_t *parser_parse_s_expression(parser_t *parser) {
                      parser->current_token.column);
     return NULL;
   case TOKEN_QUOTE:
-
+    return parser_parse_quote_family(parser);
   default:
     fprintf(stderr, "not implemented yet\n");
     exit(EXIT_FAILURE);
