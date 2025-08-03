@@ -247,6 +247,60 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
   return atom_sexp;
 }
 
+s_expression_t *parser_parse_quote_family(parser_t *parser) {
+  switch (parser->current_token.type) {
+  case TOKEN_QUOTE:
+    parser_next(parser); // consume '
+    s_expression_t *quoted = parser_parse_s_expression(parser);
+    if (!quoted) { // SHOULD I HAVE ERROR HANDLING HERE
+      return NULL;
+    }
+
+    atom_t quote_atom = {0};
+    quote_atom.type = ATOM_SYMBOL;
+    quote_atom.value.symbol = "quote";
+
+    s_expression_t *quote_symbol = malloc(sizeof(s_expression_t));
+    if (!quote_symbol) {
+      perror("malloc");
+      exit(EXIT_FAILURE);
+    }
+    quote_symbol->type = NODE_ATOM;
+    quote_symbol->data.atom = quote_atom;
+    switch (quoted->type) {
+    case NODE_ATOM: {
+      s_expression_t *prev_atom = malloc(sizeof(s_expression_t));
+      if (!prev_atom) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+      }
+
+      // first obvious place where errors could occur
+      memcpy(prev_atom, quoted, sizeof(s_expression_t));
+
+      quoted->type = NODE_LIST;
+      s_expression_t **elements = malloc(2 * sizeof(*elements));
+      if (!elements) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+      }
+      elements[0] = quote_symbol;
+      elements[1] = prev_atom;
+
+      quoted->data.list.count = 2;
+      quoted->data.list.elements = elements;
+    }
+    case NODE_LIST:
+      printf("NOT IMPLEMENTED YET\n");
+      exit(EXIT_FAILURE);
+    }
+
+  default:
+    parser_add_error(parser, "tried to parse quote family erroneously");
+    return NULL;
+  }
+}
+
 s_expression_t *parser_parse_s_expression(parser_t *parser) {
   switch (parser->current_token.type) {
   case TOKEN_SYMBOL:
@@ -278,6 +332,8 @@ s_expression_t *parser_parse_s_expression(parser_t *parser) {
                      parser->current_token.literal, parser->current_token.line,
                      parser->current_token.column);
     return NULL;
+  case TOKEN_QUOTE:
+
   default:
     fprintf(stderr, "not implemented yet\n");
     exit(EXIT_FAILURE);

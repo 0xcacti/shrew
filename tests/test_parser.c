@@ -207,10 +207,7 @@ Test(parser_error_tests, multiple_dots) {
   lexer_t lx = lexer_new("(1 . 2 . 3)");
   parser_t p = parser_new(&lx);
   parser_parse(&p);
-  printf("we get through parsing\n");
-
   cr_assert_gt(p.error_count, 0);
-  printf("Error: %s\n", p.errors[0]);
   cr_assert(strstr(p.errors[0], "multiple dots"));
 }
 
@@ -242,4 +239,17 @@ Test(parser_error_tests, dot_outside_list) {
 
   cr_assert_gt(p.error_count, 0);
   cr_assert(strstr(p.errors[0], "saw dot outside of list"));
+}
+
+Test(parser_tests, it_parses_quoted_atoms) {
+  lexer_t lx = lexer_new("'5");
+  parser_t p = parser_new(&lx);
+  s_expression_t **sx = parser_parse(&p);
+  cr_assert_eq(p.error_count, 0);
+  cr_assert_eq(sx[0]->type, NODE_LIST);
+  cr_assert_eq(sx[0]->data.list.count, 2);
+
+  cr_assert_str_eq(sx[0]->data.list.elements[0]->data.atom.value.symbol,
+                   "quote");
+  cr_assert_eq(sx[0]->data.list.elements[1]->data.atom.value.number, 5);
 }
