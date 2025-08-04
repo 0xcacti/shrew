@@ -38,6 +38,17 @@ void skip_line_comment(lexer_t *lexer) {
   }
 }
 
+void skip_noise(lexer_t *lexer) {
+  for (;;) {
+    skip_whitespace(lexer);
+    if (lexer->ch == ';') {
+      skip_line_comment(lexer);
+      continue;
+    }
+    break;
+  }
+}
+
 char *read_string(lexer_t *lexer, bool *ok) {
   read_char(lexer);
 
@@ -209,10 +220,7 @@ lexer_t lexer_new(const char *input) {
 token_t lexer_next_token(lexer_t *lexer) {
   bool ok;
   char *literal;
-  skip_whitespace(lexer);
-  if (lexer->ch == ';') {
-    skip_line_comment(lexer);
-  }
+  skip_noise(lexer);
 
   size_t start_line = lexer->line;
   size_t start_column = lexer->column; /* column already points at `ch` */

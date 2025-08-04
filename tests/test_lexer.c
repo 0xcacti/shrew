@@ -355,3 +355,16 @@ Test(lexer_tests, reports_position_of_stray_dot) {
   cr_assert_eq(tok.line, 1);
   cr_assert_eq(tok.column, 9);
 }
+
+Test(lexer_tests, skips_many_comments_and_space) {
+  const char *input = "   ; first comment \n"
+                      " ; second comment\n"
+                      "\t\tfoo";
+  lexer_t lx = lexer_new(input);
+  token_t t = lexer_next_token(&lx);
+
+  cr_assert_eq(t.type, TOKEN_SYMBOL);
+  cr_assert_str_eq(t.literal, "foo");
+  cr_assert_eq(t.line, 3);
+  cr_assert_eq(t.column, 3);
+}
