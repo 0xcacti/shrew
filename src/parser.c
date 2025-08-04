@@ -185,7 +185,6 @@ s_expression_t *parser_parse_list(parser_t *parser) {
 }
 
 s_expression_t *parser_parse_atom(parser_t *parser) {
-  char *atom_val;
   atom_t atom = {0};
   char *literal = parser->current_token.literal;
 
@@ -202,7 +201,6 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
     break;
   case TOKEN_NUMBER:
     atom.type = ATOM_NUMBER;
-    atom_val = parser->current_token.literal;
     char *endptr;
     errno = 0;
     double v = strtod(literal, &endptr);
