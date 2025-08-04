@@ -111,12 +111,12 @@ s_expression_t *parser_parse_list(parser_t *parser) {
         free(elements);
         return NULL;
       }
-      s_expression_t *last_elem = elements[count - 1];
-      if (!last_elem) {
+      if (count == 0) {
         parser_add_error(parser, "leading dot in list");
         free(elements);
         return NULL;
       }
+
       saw_dot = true;
       parser_next(parser);
       dotted_tail = parser_parse_s_expression(parser);
