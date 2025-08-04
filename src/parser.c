@@ -384,6 +384,28 @@ s_expression_t **parser_parse(parser_t *parser) {
   return exprs;
 }
 
+void sexp_free(s_expression_t *n) {
+  if (!n)
+    return;
+
+  switch (n->type) {
+  case NODE_ATOM:
+    break;
+  case NODE_LIST:
+    for (size_t i = 0; i < n->data.list.count; i++) {
+      sexp_free(n->data.list.elements[i]);
+    }
+    free(n->data.list.elements);
+    sexp_free(n->data.list.tail);
+    break;
+  default:
+    fprintf(stderr, "Unknown node type %d\n", n->type);
+    exit(EXIT_FAILURE);
+  }
+
+  free(n);
+}
+
 void parser_free(parser_t *parser) {
   if (parser->errors) {
     for (size_t i = 0; i < parser->error_count; i++) {
