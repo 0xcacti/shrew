@@ -9,6 +9,28 @@
 const int DEFAULT_EXPRESSION_COUNT = 16;
 static s_expression_t *parser_parse_s_expression(parser_t *parser);
 
+void sexp_free(s_expression_t *n) {
+  if (!n)
+    return;
+
+  switch (n->type) {
+  case NODE_ATOM:
+    break;
+  case NODE_LIST:
+    for (size_t i = 0; i < n->data.list.count; i++) {
+      sexp_free(n->data.list.elements[i]);
+    }
+    free(n->data.list.elements);
+    sexp_free(n->data.list.tail);
+    break;
+  default:
+    fprintf(stderr, "Unknown node type %d\n", n->type);
+    exit(EXIT_FAILURE);
+  }
+
+  free(n);
+}
+
 static void grow_error_capacity(parser_t *parser) {
   size_t new_cap = parser->error_capacity ? parser->error_capacity * 2 : 4;
   char **new = realloc(parser->errors, new_cap * sizeof(char *));
@@ -95,7 +117,7 @@ s_expression_t *parser_parse_list(parser_t *parser) {
   s_expression_t **elements = malloc(capacity * sizeof(*elements));
   if (!elements) {
     perror("malloc");
-    exit(EXIT_FAILURE);
+    goto fail;
   }
 
   bool saw_dot = false;
@@ -103,28 +125,26 @@ s_expression_t *parser_parse_list(parser_t *parser) {
   while (parser->current_token.type != TOKEN_RPAREN) {
     if (parser->current_token.type == TOKEN_EOF) {
       parser_add_error(parser, "unexpected end-of-file while parsing list");
-      free(elements);
-      return NULL;
+      goto fail;
     }
     if (parser->current_token.type == TOKEN_DOT) {
       if (saw_dot) {
         parser_add_error(parser, "multiple dots in list");
-        free(elements);
-        return NULL;
+        goto fail;
       }
       if (count == 0) {
         parser_add_error(parser, "leading dot in list");
-        free(elements);
-        return NULL;
+        goto fail;
       }
 
       saw_dot = true;
       parser_next(parser);
       dotted_tail = parser_parse_s_expression(parser);
       if (!dotted_tail) {
-        free(elements);
-        return NULL;
+        parser_add_error(parser, "expected expression after dot in list");
+        goto fail;
       }
+
       parser_next(parser);
 
       if (parser->current_token.type != TOKEN_RPAREN) {
@@ -133,21 +153,21 @@ s_expression_t *parser_parse_list(parser_t *parser) {
         } else {
           parser_add_error(parser, "expected token after dotted tail");
         }
-        free(elements);
 
         while (parser->current_token.type != TOKEN_RPAREN &&
                parser->current_token.type != TOKEN_EOF) {
           parser_next(parser);
         }
-        return NULL;
+        goto fail;
       }
       break;
     }
 
     s_expression_t *element = parser_parse_s_expression(parser);
     if (!element) {
-      free(elements);
-      return NULL;
+      parser_add_error(parser, "expected expression in list but found '%s'",
+                       parser->current_token.literal);
+      goto fail;
     }
 
     if (count == capacity) {
@@ -155,7 +175,7 @@ s_expression_t *parser_parse_list(parser_t *parser) {
       elements = realloc(elements, capacity * sizeof(s_expression_t *));
       if (!elements) {
         perror("realloc");
-        exit(EXIT_FAILURE);
+        goto fail;
       }
     }
     elements[count++] = element;
@@ -165,15 +185,13 @@ s_expression_t *parser_parse_list(parser_t *parser) {
   if (parser->current_token.type != TOKEN_RPAREN) {
     parser_add_error(parser, "expected ')' but found '%s'",
                      parser->current_token.literal);
-    free(elements);
-    return NULL;
+    goto fail;
   }
 
   s_expression_t *list_sexp = malloc(sizeof(s_expression_t));
   if (!list_sexp) {
     perror("malloc");
-    free(elements);
-    exit(EXIT_FAILURE);
+    goto fail;
   }
   list_sexp->type = NODE_LIST;
   list_sexp->data.list.elements = elements;
@@ -182,6 +200,14 @@ s_expression_t *parser_parse_list(parser_t *parser) {
     list_sexp->data.list.tail = dotted_tail;
   }
   return list_sexp;
+
+fail:
+  for (size_t i = 0; i < count; i++) {
+    sexp_free(elements[i]);
+  }
+  free(elements);
+  sexp_free(dotted_tail);
+  return NULL;
 }
 
 s_expression_t *parser_parse_atom(parser_t *parser) {
@@ -380,28 +406,6 @@ s_expression_t **parser_parse(parser_t *parser) {
     parser_next(parser);
   }
   return exprs;
-}
-
-void sexp_free(s_expression_t *n) {
-  if (!n)
-    return;
-
-  switch (n->type) {
-  case NODE_ATOM:
-    break;
-  case NODE_LIST:
-    for (size_t i = 0; i < n->data.list.count; i++) {
-      sexp_free(n->data.list.elements[i]);
-    }
-    free(n->data.list.elements);
-    sexp_free(n->data.list.tail);
-    break;
-  default:
-    fprintf(stderr, "Unknown node type %d\n", n->type);
-    exit(EXIT_FAILURE);
-  }
-
-  free(n);
 }
 
 void parser_free(parser_t *parser) {
