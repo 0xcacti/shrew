@@ -293,3 +293,51 @@ Test(parser_tests, it_parses_quoted_lists) {
   cr_assert_eq(sx[1]->data.list.elements[1]->type, NODE_LIST);
   cr_assert_eq(sx[1]->data.list.elements[1]->data.list.count, 3);
 }
+
+Test(parser_tests, it_parses_quasiquote_with_unquotes) {
+  lexer_t lx = lexer_new("`(a ,b ,@c)");
+  parser_t p = parser_new(&lx);
+  s_expression_t **sx = parser_parse(&p);
+
+  cr_assert_eq(p.error_count, 0);
+
+  cr_assert_eq(sx[0]->type, NODE_LIST);
+  cr_assert_eq(sx[0]->data.list.count, 2);
+  cr_assert_str_eq(sx[0]->data.list.elements[0]->data.atom.value.symbol,
+                   "quasiquote");
+
+  s_expression_t *inner = sx[0]->data.list.elements[1];
+  cr_assert_eq(inner->type, NODE_LIST);
+  cr_assert_eq(inner->data.list.count, 3);
+
+  s_expression_t *u = inner->data.list.elements[1];
+  cr_assert_eq(u->type, NODE_LIST);
+  cr_assert_str_eq(u->data.list.elements[0]->data.atom.value.symbol, "unquote");
+  cr_assert_str_eq(u->data.list.elements[1]->data.atom.value.symbol, "b");
+
+  s_expression_t *us = inner->data.list.elements[2];
+  cr_assert_eq(us->type, NODE_LIST);
+  cr_assert_str_eq(us->data.list.elements[0]->data.atom.value.symbol,
+                   "unquote-splicing");
+  cr_assert_str_eq(us->data.list.elements[1]->data.atom.value.symbol, "c");
+}
+
+Test(parser_tests, it_parses_unquote_and_unquote_splicing_atoms) {
+  lexer_t lx = lexer_new(",x ,@y");
+  parser_t p = parser_new(&lx);
+  s_expression_t **sx = parser_parse(&p);
+
+  cr_assert_eq(p.error_count, 0);
+
+  cr_assert_eq(sx[0]->type, NODE_LIST);
+  cr_assert_eq(sx[0]->data.list.count, 2);
+  cr_assert_str_eq(sx[0]->data.list.elements[0]->data.atom.value.symbol,
+                   "unquote");
+  cr_assert_str_eq(sx[0]->data.list.elements[1]->data.atom.value.symbol, "x");
+
+  cr_assert_eq(sx[1]->type, NODE_LIST);
+  cr_assert_eq(sx[1]->data.list.count, 2);
+  cr_assert_str_eq(sx[1]->data.list.elements[0]->data.atom.value.symbol,
+                   "unquote-splicing");
+  cr_assert_str_eq(sx[1]->data.list.elements[1]->data.atom.value.symbol, "y");
+}

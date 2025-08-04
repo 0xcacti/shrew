@@ -248,51 +248,65 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
 }
 
 s_expression_t *parser_parse_quote_family(parser_t *parser) {
-  switch (parser->current_token.type) {
-  case TOKEN_QUOTE:
-    parser_next(parser);
-    s_expression_t *quoted = parser_parse_s_expression(parser);
-    if (!quoted) {
-      parser_add_error(parser, "expected expression after 'quote'");
-      return NULL;
-    }
+  int token_type = parser->current_token.type;
 
-    // make quote
-    atom_t quote_atom = {0};
-    quote_atom.type = ATOM_SYMBOL;
-    quote_atom.value.symbol = "quote";
-    s_expression_t *quote_symbol = malloc(sizeof(s_expression_t));
-    if (!quote_symbol) {
-      perror("malloc");
-      exit(EXIT_FAILURE);
-    }
-    quote_symbol->type = NODE_ATOM;
-    quote_symbol->data.atom = quote_atom;
-
-    // make elements that will go into the list
-    s_expression_t **elements = malloc(2 * sizeof(*elements));
-    if (!elements) {
-      perror("malloc");
-      exit(EXIT_FAILURE);
-    }
-    elements[0] = quote_symbol;
-    elements[1] = quoted;
-
-    // make the list
-    s_expression_t *list_sexp = malloc(sizeof(s_expression_t));
-    if (!list_sexp) {
-      perror("malloc");
-      exit(EXIT_FAILURE);
-    }
-    list_sexp->type = NODE_LIST;
-    list_sexp->data.list.elements = elements;
-    list_sexp->data.list.count = 2;
-    list_sexp->data.list.tail = NULL;
-    return list_sexp;
-  default:
-    parser_add_error(parser, "tried to parse quote family erroneously");
+  parser_next(parser);
+  s_expression_t *quoted = parser_parse_s_expression(parser);
+  if (!quoted) {
+    parser_add_error(parser, "expected expression after 'quote'");
     return NULL;
   }
+
+  // make quote
+  atom_t quote_atom = {0};
+  quote_atom.type = ATOM_SYMBOL;
+  switch (token_type) {
+  case TOKEN_QUOTE:
+    quote_atom.value.symbol = "quote";
+    break;
+  case TOKEN_UNQUOTE:
+    quote_atom.value.symbol = "unquote";
+    break;
+  case TOKEN_UNQUOTE_SPLICING:
+    quote_atom.value.symbol = "unquote-splicing";
+    break;
+  case TOKEN_QUASIQUOTE:
+    quote_atom.value.symbol = "quasiquote";
+    break;
+  default:
+    parser_add_error(parser,
+                     "internal: unexpected token type %d in quote family",
+                     token_type);
+    return NULL;
+  }
+  s_expression_t *quote_symbol = malloc(sizeof(s_expression_t));
+  if (!quote_symbol) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+  quote_symbol->type = NODE_ATOM;
+  quote_symbol->data.atom = quote_atom;
+
+  // make elements that will go into the list
+  s_expression_t **elements = malloc(2 * sizeof(*elements));
+  if (!elements) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+  elements[0] = quote_symbol;
+  elements[1] = quoted;
+
+  // make the list
+  s_expression_t *list_sexp = malloc(sizeof(s_expression_t));
+  if (!list_sexp) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+  list_sexp->type = NODE_LIST;
+  list_sexp->data.list.elements = elements;
+  list_sexp->data.list.count = 2;
+  list_sexp->data.list.tail = NULL;
+  return list_sexp;
 }
 
 s_expression_t *parser_parse_s_expression(parser_t *parser) {
@@ -327,6 +341,9 @@ s_expression_t *parser_parse_s_expression(parser_t *parser) {
                      parser->current_token.column);
     return NULL;
   case TOKEN_QUOTE:
+  case TOKEN_UNQUOTE:
+  case TOKEN_UNQUOTE_SPLICING:
+  case TOKEN_QUASIQUOTE:
     return parser_parse_quote_family(parser);
   default:
     fprintf(stderr, "not implemented yet\n");
