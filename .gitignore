@@ -29,3 +29,5 @@ TAGS
 .cache/
 .clangd/
 
+# Criterion output files
+Testing/
