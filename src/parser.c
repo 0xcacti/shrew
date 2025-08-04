@@ -131,8 +131,7 @@ s_expression_t *parser_parse_list(parser_t *parser) {
       if (saw_dot) {
         parser_add_error(parser, "multiple dots in list");
         goto fail;
-      }
-      if (count == 0) {
+      } else if (count == 0) {
         parser_add_error(parser, "leading dot in list");
         goto fail;
       }
@@ -147,20 +146,18 @@ s_expression_t *parser_parse_list(parser_t *parser) {
 
       parser_next(parser);
 
-      if (parser->current_token.type != TOKEN_RPAREN) {
-        if (parser->current_token.type == TOKEN_DOT) {
-          parser_add_error(parser, "multiple dots in list");
-        } else {
-          parser_add_error(parser, "expected token after dotted tail");
-        }
+      // added to make sure we correctly handle error on multiple dots
+      if (parser->current_token.type == TOKEN_DOT) {
+        continue;
+      }
 
-        while (parser->current_token.type != TOKEN_RPAREN &&
-               parser->current_token.type != TOKEN_EOF) {
-          parser_next(parser);
-        }
+      if (parser->current_token.type != TOKEN_RPAREN) {
+        parser_add_error(parser,
+                         "expected ')' after dotted tail but found '%s'",
+                         parser->current_token.literal);
         goto fail;
       }
-      break;
+      continue;
     }
 
     s_expression_t *element = parser_parse_s_expression(parser);
