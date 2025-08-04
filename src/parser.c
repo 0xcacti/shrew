@@ -172,9 +172,7 @@ s_expression_t *parser_parse_list(parser_t *parser) {
   list_sexp->type = NODE_LIST;
   list_sexp->data.list.elements = elements;
   list_sexp->data.list.count = count;
-  if (dotted_tail) {
-    list_sexp->data.list.tail = dotted_tail;
-  }
+  list_sexp->data.list.tail = dotted_tail;
   return list_sexp;
 
 fail:
