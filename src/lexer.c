@@ -214,6 +214,9 @@ token_t lexer_next_token(lexer_t *lexer) {
     skip_line_comment(lexer);
   }
 
+  size_t start_line = lexer->line;
+  size_t start_column = lexer->column; /* column already points at `ch` */
+
   token_t token = {0};
   switch (lexer->ch) {
   case 0:
@@ -226,8 +229,6 @@ token_t lexer_next_token(lexer_t *lexer) {
         token = token_new(TOKEN_NUMBER, literal);
       } else {
         token = token_new(TOKEN_INVALID, literal);
-        token.line = lexer->line;
-        token.column = lexer->column;
       }
     } else {
       token = token_new(TOKEN_SYMBOL, read_symbol(lexer));
@@ -240,8 +241,6 @@ token_t lexer_next_token(lexer_t *lexer) {
         token = token_new(TOKEN_NUMBER, literal);
       } else {
         token = token_new(TOKEN_INVALID, literal);
-        token.line = lexer->line;
-        token.column = lexer->column;
       }
     } else {
       token = token_new(TOKEN_DOT, ".");
@@ -275,8 +274,6 @@ token_t lexer_next_token(lexer_t *lexer) {
     break;
   case '@':
     token = token_new(TOKEN_INVALID, "@");
-    token.line = lexer->line;
-    token.column = lexer->column;
     read_char(lexer);
     break;
   case '#':
@@ -290,8 +287,6 @@ token_t lexer_next_token(lexer_t *lexer) {
       token = token_new(TOKEN_FALSE, "#f");
     } else {
       token = token_new(TOKEN_INVALID, read_symbol(lexer));
-      token.line = lexer->line;
-      token.column = lexer->column;
     }
     break;
   case '"':
@@ -300,8 +295,6 @@ token_t lexer_next_token(lexer_t *lexer) {
       token = token_new(TOKEN_STRING, literal);
     } else {
       token = token_new(TOKEN_INVALID, literal);
-      token.line = lexer->line;
-      token.column = lexer->column;
     }
     break;
   case '0':
@@ -319,14 +312,14 @@ token_t lexer_next_token(lexer_t *lexer) {
       token = token_new(TOKEN_NUMBER, literal);
     } else {
       token = token_new(TOKEN_INVALID, literal);
-      token.line = lexer->line;
-      token.column = lexer->column;
     }
     break;
   default:
     token = token_new(TOKEN_SYMBOL, read_symbol(lexer));
     break;
   }
+  token.line = start_line;
+  token.column = start_column;
 
   return token;
 }
