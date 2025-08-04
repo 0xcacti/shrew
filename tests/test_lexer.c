@@ -328,14 +328,30 @@ Test(lexer_tests, it_lexes_invalid_at_sign) {
   cr_assert_eq(lexer.position, 1, "position should be at the end of input");
 }
 
-Test(lexer_tests, it_catches_line_and_col_on_invalid) {
-  const char *input = "\n1.2.3";
-  lexer_t lexer = lexer_new(input);
-  token_t token = lexer_next_token(&lexer);
+Test(lexer_tests, reports_line_and_column_on_invalid_number) {
+  const char *input = "\n"
+                      "1.2.3";
 
-  cr_assert_eq(token.type, TOKEN_INVALID, "token type should be TOKEN_INVALID");
-  cr_assert_str_eq(token.literal, "1.2.3", "token literal should be '1.2.3'");
-  cr_assert_eq(lexer.position, 6, "position should be at the end of input");
-  cr_assert_eq(lexer.line, 2, "line number should be 2");
-  cr_assert_eq(lexer.column, 6, "column number should be 6");
+  lexer_t lx = lexer_new(input);
+  token_t t = lexer_next_token(&lx);
+
+  cr_assert_eq(t.type, TOKEN_INVALID);
+  cr_assert_str_eq(t.literal, "1.2.3");
+
+  cr_assert_eq(t.line, 2, "line should be 2");
+  cr_assert_eq(t.column, 1, "column should be 1");
+}
+
+Test(lexer_tests, reports_position_of_stray_dot) {
+  const char *input = "(+ 1 3) . (- 3 1)";
+  lexer_t lx = lexer_new(input);
+
+  token_t tok;
+  do {
+    tok = lexer_next_token(&lx);
+  } while (tok.type != TOKEN_DOT);
+
+  cr_assert_eq(tok.type, TOKEN_DOT);
+  cr_assert_eq(tok.line, 1);
+  cr_assert_eq(tok.column, 9);
 }
