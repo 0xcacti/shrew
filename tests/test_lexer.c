@@ -146,7 +146,6 @@ Test(lexer_test, it_lexes_negative_numbers) {
   const char *input = "-123";
   lexer_t lexer = lexer_new(input);
   token_t token = lexer_next_token(&lexer);
-  printf("Token type: %d, literal: %s\n", token.type, token.literal);
   cr_assert_eq(token.type, TOKEN_NUMBER, "token type should be TOKEN_NUMBER");
   cr_assert_str_eq(token.literal, "-123", "token literal should be '-123'");
   cr_assert_eq(lexer.position, 4, "position should be at the end of input");
@@ -367,4 +366,32 @@ Test(lexer_tests, skips_many_comments_and_space) {
   cr_assert_str_eq(t.literal, "foo");
   cr_assert_eq(t.line, 3);
   cr_assert_eq(t.column, 3);
+}
+
+Test(number_tests, accepts_various_valid_forms) {
+  const char *src = "123 -42 1. .5 1.0 +.7";
+  lexer_t lx = lexer_new(src);
+  const char *expect[] = {"123", "-42", "1.", ".5", "1.0", "+.7"};
+
+  for (size_t i = 0; i < sizeof expect / sizeof *expect; ++i) {
+    token_t t = lexer_next_token(&lx);
+    cr_assert_eq(t.type, TOKEN_NUMBER);
+    cr_assert_str_eq(t.literal, expect[i]);
+  }
+}
+
+Test(number_tests, rejects_invalid_numbers) {
+  const char *src = "-. .. 1.2.3";
+  lexer_t lx = lexer_new(src);
+
+  token_t t = lexer_next_token(&lx);
+  cr_assert_eq(t.type, TOKEN_INVALID);
+
+  t = lexer_next_token(&lx);
+  cr_assert_eq(t.type, TOKEN_DOT);
+  t = lexer_next_token(&lx);
+  cr_assert_eq(t.type, TOKEN_DOT);
+
+  t = lexer_next_token(&lx);
+  cr_assert_eq(t.type, TOKEN_INVALID);
 }

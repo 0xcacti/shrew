@@ -159,26 +159,30 @@ char peek(lexer_t *lexer) {
 char *read_number(lexer_t *lexer, bool *ok) {
   *ok = true;
   size_t start_pos = lexer->position;
-  bool seen_dot = false;
-  bool seen_digit = false;
-  if (lexer->ch == '-') {
+  if (lexer->ch == '-' || lexer->ch == '+') {
     read_char(lexer);
   }
+  bool seen_dot = false;
+  bool seen_digit_before = false;
+  bool seen_digit_after = false;
 
   while (isdigit(lexer->ch) || lexer->ch == '.') {
     if (lexer->ch == '.') {
       if (seen_dot) {
         *ok = false;
-      } else {
-        seen_dot = true;
       }
+      seen_dot = true;
     } else {
-      seen_digit = true;
+      if (seen_dot) {
+        seen_digit_after = true;
+      } else {
+        seen_digit_before = true;
+      }
     }
     read_char(lexer);
   }
 
-  if (!seen_digit) {
+  if (!(seen_digit_before || seen_digit_after)) {
     *ok = false;
   }
   return strndup(lexer->input + start_pos, lexer->position - start_pos);
@@ -230,6 +234,7 @@ token_t lexer_next_token(lexer_t *lexer) {
   case 0:
     token = token_new(TOKEN_EOF, "");
     break;
+  case '+':
   case '-':
     if (isdigit(peek(lexer)) || peek(lexer) == '.') {
       literal = read_number(lexer, &ok);
