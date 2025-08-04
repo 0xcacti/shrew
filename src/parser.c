@@ -250,16 +250,17 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
 s_expression_t *parser_parse_quote_family(parser_t *parser) {
   switch (parser->current_token.type) {
   case TOKEN_QUOTE:
-    parser_next(parser); // consume '
+    parser_next(parser);
     s_expression_t *quoted = parser_parse_s_expression(parser);
-    if (!quoted) { // SHOULD I HAVE ERROR HANDLING HERE
+    if (!quoted) {
+      parser_add_error(parser, "expected expression after 'quote'");
       return NULL;
     }
 
+    // make quote
     atom_t quote_atom = {0};
     quote_atom.type = ATOM_SYMBOL;
     quote_atom.value.symbol = "quote";
-
     s_expression_t *quote_symbol = malloc(sizeof(s_expression_t));
     if (!quote_symbol) {
       perror("malloc");
@@ -268,39 +269,26 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
     quote_symbol->type = NODE_ATOM;
     quote_symbol->data.atom = quote_atom;
 
-    switch (quoted->type) {
-    case NODE_ATOM: {
-      s_expression_t *prev_atom = malloc(sizeof(s_expression_t));
-      if (!prev_atom) {
-        perror("malloc");
-        exit(EXIT_FAILURE);
-      }
-
-      // first obvious place where errors could occur
-      memcpy(prev_atom, quoted, sizeof(s_expression_t));
-
-      quoted->type = NODE_LIST;
-      s_expression_t **elements = malloc(2 * sizeof(*elements));
-      if (!elements) {
-        perror("malloc");
-        exit(EXIT_FAILURE);
-      }
-      elements[0] = quote_symbol;
-      elements[1] = prev_atom;
-
-      quoted->data.list.count = 2;
-      quoted->data.list.elements = elements;
-      return quoted;
+    // make elements that will go into the list
+    s_expression_t **elements = malloc(2 * sizeof(*elements));
+    if (!elements) {
+      perror("malloc");
+      exit(EXIT_FAILURE);
     }
-    case NODE_LIST:
-      s_expression_t *prev_list = malloc(sizeof(s_expression_t));
-      if (!prev_list) {
-        perror("malloc");
-        exit(EXIT_FAILURE);
-      }
-      memcpy(prev_list, quoted, sizeof(s_expression_t));
-    }
+    elements[0] = quote_symbol;
+    elements[1] = quoted;
 
+    // make the list
+    s_expression_t *list_sexp = malloc(sizeof(s_expression_t));
+    if (!list_sexp) {
+      perror("malloc");
+      exit(EXIT_FAILURE);
+    }
+    list_sexp->type = NODE_LIST;
+    list_sexp->data.list.elements = elements;
+    list_sexp->data.list.count = 2;
+    list_sexp->data.list.tail = NULL;
+    return list_sexp;
   default:
     parser_add_error(parser, "tried to parse quote family erroneously");
     return NULL;

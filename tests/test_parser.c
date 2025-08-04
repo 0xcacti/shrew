@@ -272,3 +272,24 @@ Test(parser_tests, it_parses_quoted_atoms) {
                    "quote");
   cr_assert_eq(sx[2]->data.list.elements[1]->data.atom.value.boolean, true);
 }
+
+Test(parser_tests, it_parses_quoted_lists) {
+  lexer_t lx = lexer_new("'(1 2 3) '(foo bar (baz qux))");
+  parser_t p = parser_new(&lx);
+  s_expression_t **sx = parser_parse(&p);
+  cr_assert_eq(p.error_count, 0);
+
+  cr_assert_eq(sx[0]->type, NODE_LIST);
+  cr_assert_eq(sx[0]->data.list.count, 2);
+  cr_assert_str_eq(sx[0]->data.list.elements[0]->data.atom.value.symbol,
+                   "quote");
+  cr_assert_eq(sx[0]->data.list.elements[1]->type, NODE_LIST);
+  cr_assert_eq(sx[0]->data.list.elements[1]->data.list.count, 3);
+
+  cr_assert_eq(sx[1]->type, NODE_LIST);
+  cr_assert_eq(sx[1]->data.list.count, 2);
+  cr_assert_str_eq(sx[1]->data.list.elements[0]->data.atom.value.symbol,
+                   "quote");
+  cr_assert_eq(sx[1]->data.list.elements[1]->type, NODE_LIST);
+  cr_assert_eq(sx[1]->data.list.elements[1]->data.list.count, 3);
+}
