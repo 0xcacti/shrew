@@ -256,10 +256,16 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
 
 s_expression_t *parser_parse_quote_family(parser_t *parser) {
   int token_type = parser->current_token.type;
+  if (token_type == TOKEN_QUASIQUOTE) {
+    parser->qq_depth++;
+  }
 
   parser_next(parser);
   s_expression_t *quoted = parser_parse_s_expression(parser);
   if (!quoted) {
+    if (token_type == TOKEN_QUASIQUOTE) {
+      parser->qq_depth--;
+    }
     parser_add_error(parser, "expected expression after 'quote'");
     return NULL;
   }
@@ -273,9 +279,16 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
     break;
   case TOKEN_UNQUOTE:
     quote_atom.value.symbol = "unquote";
+    if (parser->qq_depth == 0) {
+      parser_add_error(parser, "unquote outside quasiquote");
+      return NULL;
+    }
     break;
   case TOKEN_UNQUOTE_SPLICING:
     quote_atom.value.symbol = "unquote-splicing";
+    if (parser->qq_depth == 0) {
+      parser_add_error(parser, "unquote-splicing outside quasiquote");
+    }
     break;
   case TOKEN_QUASIQUOTE:
     quote_atom.value.symbol = "quasiquote";
@@ -284,7 +297,6 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
     parser_add_error(parser,
                      "internal: unexpected token type %d in quote family",
                      token_type);
-    return NULL;
   }
   s_expression_t *quote_symbol = malloc(sizeof(s_expression_t));
   if (!quote_symbol) {
@@ -313,6 +325,9 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
   list_sexp->data.list.elements = elements;
   list_sexp->data.list.count = 2;
   list_sexp->data.list.tail = NULL;
+  if (token_type == TOKEN_QUASIQUOTE) {
+    parser->qq_depth--;
+  }
   return list_sexp;
 }
 

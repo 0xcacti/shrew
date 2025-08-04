@@ -359,24 +359,31 @@ Test(parser_tests, it_parses_quasiquote_with_unquotes) {
   cleanup(&r, &parser);
 }
 
-Test(parser_tests, it_parses_unquote_and_unquote_splicing_atoms) {
-  lexer_t lx = lexer_new(",x ,@y");
+Test(parser_error_tests, unquote_outside_quasiquote) {
+  lexer_t lx = lexer_new(",x");
+  parser_t p = parser_new(&lx);
+  parse_result_t r = parser_parse(&p);
+
+  cr_assert_gt(p.error_count, 0);
+  cr_assert(strstr(p.errors[0], "unquote outside quasiquote"));
+  cleanup(&r, &p);
+}
+
+Test(parser_error_tests, unquote_splicing_outside_quasiquote) {
+  lexer_t lx = lexer_new(",@xs");
+  parser_t p = parser_new(&lx);
+  parse_result_t r = parser_parse(&p);
+
+  cr_assert_gt(p.error_count, 0);
+  cr_assert(strstr(p.errors[0], "unquote-splicing outside quasiquote"));
+  cleanup(&r, &p);
+}
+
+Test(parser_tests, unquote_within_quasiquote_is_ok) {
+  lexer_t lx = lexer_new("`(a ,b ,@c)");
   parser_t parser = parser_new(&lx);
   parse_result_t r = parser_parse(&parser);
-  s_expression_t **sexp = r.expressions;
 
   cr_assert_eq(parser.error_count, 0);
-
-  cr_assert_eq(sexp[0]->type, NODE_LIST);
-  cr_assert_eq(sexp[0]->data.list.count, 2);
-  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol,
-                   "unquote");
-  cr_assert_str_eq(sexp[0]->data.list.elements[1]->data.atom.value.symbol, "x");
-
-  cr_assert_eq(sexp[1]->type, NODE_LIST);
-  cr_assert_eq(sexp[1]->data.list.count, 2);
-  cr_assert_str_eq(sexp[1]->data.list.elements[0]->data.atom.value.symbol,
-                   "unquote-splicing");
-  cr_assert_str_eq(sexp[1]->data.list.elements[1]->data.atom.value.symbol, "y");
   cleanup(&r, &parser);
 }

@@ -48,9 +48,12 @@ typedef struct parser {
   lexer_t *lexer;
   token_t current_token;
   token_t next_token;
+
   char **errors;
   size_t error_count;
   size_t error_capacity;
+
+  int qq_depth;
 } parser_t;
 
 void parser_add_error(parser_t *parser, const char *fmt, ...);
