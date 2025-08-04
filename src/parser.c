@@ -76,6 +76,7 @@ parser_t parser_new(lexer_t *lexer) {
 }
 
 void parser_next(parser_t *parser) {
+  token_free(&parser->current_token);
   parser->current_token = parser->next_token;
   parser->next_token = lexer_next_token(parser->lexer);
 }
@@ -184,16 +185,24 @@ s_expression_t *parser_parse_list(parser_t *parser) {
 }
 
 s_expression_t *parser_parse_atom(parser_t *parser) {
+  char *atom_val;
   atom_t atom = {0};
+  char *literal = parser->current_token.literal;
 
   switch (parser->current_token.type) {
   case TOKEN_SYMBOL:
     atom.type = ATOM_SYMBOL;
-    atom.value.symbol = parser->current_token.literal;
+    atom.value.symbol = literal;
+    parser->current_token.literal = NULL;
+    break;
+  case TOKEN_STRING:
+    atom.type = ATOM_STRING;
+    atom.value.string = literal;
+    parser->current_token.literal = NULL;
     break;
   case TOKEN_NUMBER:
     atom.type = ATOM_NUMBER;
-    char *literal = parser->current_token.literal;
+    atom_val = parser->current_token.literal;
     char *endptr;
     errno = 0;
     double v = strtod(literal, &endptr);
@@ -214,10 +223,8 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
     }
 
     atom.value.number = v;
-    break;
-  case TOKEN_STRING:
-    atom.type = ATOM_STRING;
-    atom.value.string = parser->current_token.literal;
+    free(literal);
+    parser->current_token.literal = NULL;
     break;
   case TOKEN_FALSE:
   case TOKEN_TRUE:
@@ -227,6 +234,8 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
     } else {
       atom.value.boolean = false;
     }
+    free(literal);
+    parser->current_token.literal = NULL;
     break;
   default:
     parser_add_error(parser, "Expected atom but found '%s' at %zu:%zu",
