@@ -57,6 +57,7 @@ void parser_add_error(parser_t *parser, const char *fmt, ...);
 void parser_clear_errors(parser_t *parser);
 parser_t parser_new(lexer_t *lexer);
 void parser_free(parser_t *parser);
+void parse_result_free(parse_result_t *result);
 parse_result_t parser_parse(parser_t *parser);
 
 #endif

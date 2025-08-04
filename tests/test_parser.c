@@ -1,6 +1,11 @@
 #include "parser.h"
 #include <criterion/criterion.h>
 
+static void cleanup(parse_result_t *result, parser_t *parser) {
+  parse_result_free(result);
+  parser_free(parser);
+}
+
 Test(parser_tests, it_parses_numbers) {
   const char *input = "123\n0.134";
   lexer_t lexer = lexer_new(input);
@@ -20,6 +25,7 @@ Test(parser_tests, it_parses_numbers) {
                "atom type should be ATOM_NUMBER");
   cr_assert_float_eq(sexp[1]->data.atom.value.number, 0.134, 0.001,
                      "atom should be 0.134");
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_parses_symbols) {
@@ -45,6 +51,7 @@ Test(parser_tests, it_parses_symbols) {
                "third atom type should be ATOM_SYMBOL");
   cr_assert_str_eq(sexp[2]->data.atom.value.symbol, "?qux!",
                    "third symbol should be '?qux!'");
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_parses_strings) {
@@ -66,6 +73,7 @@ Test(parser_tests, it_parses_strings) {
   cr_assert_eq(sexp[2]->data.atom.type, ATOM_STRING);
   cr_assert_str_eq(sexp[2]->data.atom.value.string, "escaped \"quote\"",
                    "should unescape embedded quotes");
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_parses_booleans) {
@@ -83,6 +91,7 @@ Test(parser_tests, it_parses_booleans) {
   cr_assert_eq(sexp[1]->data.atom.type, ATOM_BOOLEAN);
   cr_assert_eq(sexp[1]->data.atom.value.boolean, false,
                "second boolean should be false");
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_parses_lists) {
@@ -158,6 +167,7 @@ Test(parser_tests, it_parses_lists) {
   for (size_t i = 0; i < parser.error_count; i++) {
     fprintf(stderr, "Error: %s\n", parser.errors[i]);
   }
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_parses_empty_and_nested_empty_lists) {
@@ -169,6 +179,7 @@ Test(parser_tests, it_parses_empty_and_nested_empty_lists) {
   cr_assert_eq(sexp[0]->data.list.count, 0, "empty list has no elements");
   cr_assert_eq(sexp[1]->data.list.count, 1);
   cr_assert_eq(sexp[1]->data.list.elements[0]->data.list.count, 0);
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_handles_many_elements) {
@@ -184,40 +195,45 @@ Test(parser_tests, it_handles_many_elements) {
 
   cr_assert_eq(sexp[0]->data.list.count, 40);
   cr_assert_eq(parser.error_count, 0);
+  cleanup(&r, &parser);
 }
 
 Test(parser_error_tests, eof_in_list) {
   lexer_t lx = lexer_new("(1 2");
   parser_t parser = parser_new(&lx);
-  parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
 
   cr_assert_gt(parser.error_count, 0);
   cr_assert(strstr(parser.errors[0], "unexpected end-of-file"));
+  cleanup(&r, &parser);
 }
 
 Test(parser_error_tests, unterminated_string) {
   lexer_t lx = lexer_new("\"oops");
   parser_t parser = parser_new(&lx);
-  parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
 
   cr_assert_gt(parser.error_count, 0);
+  cleanup(&r, &parser);
 }
 
 Test(parser_error_tests, stray_dot) {
   lexer_t lx = lexer_new("(1 . 2 3)");
   parser_t parser = parser_new(&lx);
-  parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
 
   cr_assert_gt(parser.error_count, 0);
   cr_assert(strstr(parser.errors[0], "after dotted tail"));
+  cleanup(&r, &parser);
 }
 
 Test(parser_error_tests, multiple_dots) {
   lexer_t lx = lexer_new("(1 . 2 . 3)");
   parser_t parser = parser_new(&lx);
-  parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
   cr_assert_gt(parser.error_count, 0);
   cr_assert(strstr(parser.errors[0], "multiple dots"));
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_parses_simple_dotted_pair) {
@@ -230,24 +246,27 @@ Test(parser_tests, it_parses_simple_dotted_pair) {
   cr_assert_eq(sexp[0]->type, NODE_LIST);
   cr_assert_eq(sexp[0]->data.list.count, 1);
   cr_assert_str_eq(sexp[0]->data.list.tail->data.atom.value.symbol, "b");
+  cleanup(&r, &parser);
 }
 
 Test(parser_error_tests, dot_before_any_element) {
   lexer_t lx = lexer_new("( . 1)");
   parser_t parser = parser_new(&lx);
-  parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
 
   cr_assert_gt(parser.error_count, 0);
   cr_assert(strstr(parser.errors[0], "leading dot in list"));
+  cleanup(&r, &parser);
 }
 
 Test(parser_error_tests, dot_outside_list) {
   lexer_t lx = lexer_new("(+ 1 3) . (- 3 1)");
   parser_t parser = parser_new(&lx);
-  parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
 
   cr_assert_gt(parser.error_count, 0);
   cr_assert(strstr(parser.errors[0], "saw dot outside of list"));
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_parses_quoted_atoms) {
@@ -283,6 +302,7 @@ Test(parser_tests, it_parses_quoted_atoms) {
   cr_assert_str_eq(sexp[2]->data.list.elements[0]->data.atom.value.symbol,
                    "quote");
   cr_assert_eq(sexp[2]->data.list.elements[1]->data.atom.value.boolean, true);
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_parses_quoted_lists) {
@@ -306,6 +326,7 @@ Test(parser_tests, it_parses_quoted_lists) {
                    "quote");
   cr_assert_eq(sexp[1]->data.list.elements[1]->type, NODE_LIST);
   cr_assert_eq(sexp[1]->data.list.elements[1]->data.list.count, 3);
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_parses_quasiquote_with_unquotes) {
@@ -335,6 +356,7 @@ Test(parser_tests, it_parses_quasiquote_with_unquotes) {
   cr_assert_str_eq(us->data.list.elements[0]->data.atom.value.symbol,
                    "unquote-splicing");
   cr_assert_str_eq(us->data.list.elements[1]->data.atom.value.symbol, "c");
+  cleanup(&r, &parser);
 }
 
 Test(parser_tests, it_parses_unquote_and_unquote_splicing_atoms) {
@@ -356,4 +378,5 @@ Test(parser_tests, it_parses_unquote_and_unquote_splicing_atoms) {
   cr_assert_str_eq(sexp[1]->data.list.elements[0]->data.atom.value.symbol,
                    "unquote-splicing");
   cr_assert_str_eq(sexp[1]->data.list.elements[1]->data.atom.value.symbol, "y");
+  cleanup(&r, &parser);
 }

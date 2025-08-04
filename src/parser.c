@@ -8,28 +8,7 @@
 
 const int DEFAULT_EXPRESSION_COUNT = 16;
 static s_expression_t *parser_parse_s_expression(parser_t *parser);
-
-void sexp_free(s_expression_t *n) {
-  if (!n)
-    return;
-
-  switch (n->type) {
-  case NODE_ATOM:
-    break;
-  case NODE_LIST:
-    for (size_t i = 0; i < n->data.list.count; i++) {
-      sexp_free(n->data.list.elements[i]);
-    }
-    free(n->data.list.elements);
-    sexp_free(n->data.list.tail);
-    break;
-  default:
-    fprintf(stderr, "Unknown node type %d\n", n->type);
-    exit(EXIT_FAILURE);
-  }
-
-  free(n);
-}
+static void sexp_free(s_expression_t *n);
 
 static void grow_error_capacity(parser_t *parser) {
   size_t new_cap = parser->error_capacity ? parser->error_capacity * 2 : 4;
@@ -410,6 +389,28 @@ parse_result_t parser_parse(parser_t *parser) {
   return result;
 }
 
+void sexp_free(s_expression_t *n) {
+  if (!n)
+    return;
+
+  switch (n->type) {
+  case NODE_ATOM:
+    break;
+  case NODE_LIST:
+    for (size_t i = 0; i < n->data.list.count; i++) {
+      sexp_free(n->data.list.elements[i]);
+    }
+    free(n->data.list.elements);
+    sexp_free(n->data.list.tail);
+    break;
+  default:
+    fprintf(stderr, "Unknown node type %d\n", n->type);
+    exit(EXIT_FAILURE);
+  }
+
+  free(n);
+}
+
 void parser_free(parser_t *parser) {
   if (parser->errors) {
     for (size_t i = 0; i < parser->error_count; i++) {
@@ -418,4 +419,14 @@ void parser_free(parser_t *parser) {
     free(parser->errors);
     parser->errors = NULL;
   }
+}
+
+void parse_result_free(parse_result_t *result) {
+  for (size_t i = 0; i < result->count; i++) {
+    sexp_free(result->expressions[i]);
+  }
+  free(result->expressions);
+  result->expressions = NULL;
+  result->count = 0;
+  *result = (parse_result_t){0};
 }
