@@ -382,7 +382,7 @@ s_expression_t *parser_parse_s_expression(parser_t *parser) {
   }
 }
 
-s_expression_t **parser_parse(parser_t *parser) {
+parse_result_t parser_parse(parser_t *parser) {
   size_t expr_cap = DEFAULT_EXPRESSION_COUNT;
   s_expression_t **exprs = malloc(expr_cap * sizeof *exprs);
   size_t expr_count = 0;
@@ -402,7 +402,12 @@ s_expression_t **parser_parse(parser_t *parser) {
     }
     parser_next(parser);
   }
-  return exprs;
+
+  parse_result_t result = {
+      .expressions = exprs,
+      .count = expr_count,
+  };
+  return result;
 }
 
 void parser_free(parser_t *parser) {

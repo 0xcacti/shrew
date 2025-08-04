@@ -5,7 +5,9 @@ Test(parser_tests, it_parses_numbers) {
   const char *input = "123\n0.134";
   lexer_t lexer = lexer_new(input);
   parser_t parser = parser_new(&lexer);
-  s_expression_t **sexp = parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
+
   cr_assert_not_null(sexp, "s_expression should not be NULL");
   cr_assert_eq(sexp[0]->type, NODE_ATOM,
                "first s_expression should be an atom");
@@ -24,7 +26,8 @@ Test(parser_tests, it_parses_symbols) {
   const char *input = "foo bar-baz ?qux!";
   lexer_t lexer = lexer_new(input);
   parser_t parser = parser_new(&lexer);
-  s_expression_t **sexp = parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
 
   cr_assert_eq(sexp[0]->type, NODE_ATOM,
                "first s_expression should be an atom");
@@ -48,7 +51,8 @@ Test(parser_tests, it_parses_strings) {
   const char *input = "\"hello world\" \"\" \"escaped \\\"quote\\\"\"";
   lexer_t lexer = lexer_new(input);
   parser_t parser = parser_new(&lexer);
-  s_expression_t **sexp = parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
 
   cr_assert_eq(sexp[0]->type, NODE_ATOM);
   cr_assert_eq(sexp[0]->data.atom.type, ATOM_STRING);
@@ -68,7 +72,8 @@ Test(parser_tests, it_parses_booleans) {
   const char *input = "#t #f";
   lexer_t lexer = lexer_new(input);
   parser_t parser = parser_new(&lexer);
-  s_expression_t **sexp = parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
 
   cr_assert_eq(sexp[0]->type, NODE_ATOM);
   cr_assert_eq(sexp[0]->data.atom.type, ATOM_BOOLEAN);
@@ -84,7 +89,9 @@ Test(parser_tests, it_parses_lists) {
   const char *input = "(1 2 3) (foo bar (baz qux))";
   lexer_t lexer = lexer_new(input);
   parser_t parser = parser_new(&lexer);
-  s_expression_t **sexp = parser_parse(&parser);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
+
   cr_assert_eq(parser.error_count, 0, "there should be no parsing errors");
   cr_assert_eq(sexp[0]->type, NODE_LIST, "first s_expression should be a list");
   cr_assert_eq(sexp[0]->data.list.count, 3,
@@ -155,12 +162,13 @@ Test(parser_tests, it_parses_lists) {
 
 Test(parser_tests, it_parses_empty_and_nested_empty_lists) {
   lexer_t lx = lexer_new("() (())");
-  parser_t p = parser_new(&lx);
-  s_expression_t **sx = parser_parse(&p);
+  parser_t parser = parser_new(&lx);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
 
-  cr_assert_eq(sx[0]->data.list.count, 0, "empty list has no elements");
-  cr_assert_eq(sx[1]->data.list.count, 1);
-  cr_assert_eq(sx[1]->data.list.elements[0]->data.list.count, 0);
+  cr_assert_eq(sexp[0]->data.list.count, 0, "empty list has no elements");
+  cr_assert_eq(sexp[1]->data.list.count, 1);
+  cr_assert_eq(sexp[1]->data.list.elements[0]->data.list.count, 0);
 }
 
 Test(parser_tests, it_handles_many_elements) {
@@ -170,143 +178,150 @@ Test(parser_tests, it_handles_many_elements) {
   strcat(buf, ")");
 
   lexer_t lx = lexer_new(buf);
-  parser_t p = parser_new(&lx);
-  s_expression_t **sx = parser_parse(&p);
+  parser_t parser = parser_new(&lx);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
 
-  cr_assert_eq(sx[0]->data.list.count, 40);
-  cr_assert_eq(p.error_count, 0);
+  cr_assert_eq(sexp[0]->data.list.count, 40);
+  cr_assert_eq(parser.error_count, 0);
 }
 
 Test(parser_error_tests, eof_in_list) {
   lexer_t lx = lexer_new("(1 2");
-  parser_t p = parser_new(&lx);
-  parser_parse(&p);
+  parser_t parser = parser_new(&lx);
+  parser_parse(&parser);
 
-  cr_assert_gt(p.error_count, 0);
-  cr_assert(strstr(p.errors[0], "unexpected end-of-file"));
+  cr_assert_gt(parser.error_count, 0);
+  cr_assert(strstr(parser.errors[0], "unexpected end-of-file"));
 }
 
 Test(parser_error_tests, unterminated_string) {
   lexer_t lx = lexer_new("\"oops");
-  parser_t p = parser_new(&lx);
-  parser_parse(&p);
+  parser_t parser = parser_new(&lx);
+  parser_parse(&parser);
 
-  cr_assert_gt(p.error_count, 0);
+  cr_assert_gt(parser.error_count, 0);
 }
 
 Test(parser_error_tests, stray_dot) {
   lexer_t lx = lexer_new("(1 . 2 3)");
-  parser_t p = parser_new(&lx);
-  parser_parse(&p);
+  parser_t parser = parser_new(&lx);
+  parser_parse(&parser);
 
-  cr_assert_gt(p.error_count, 0);
-  cr_assert(strstr(p.errors[0], "after dotted tail"));
+  cr_assert_gt(parser.error_count, 0);
+  cr_assert(strstr(parser.errors[0], "after dotted tail"));
 }
 
 Test(parser_error_tests, multiple_dots) {
   lexer_t lx = lexer_new("(1 . 2 . 3)");
-  parser_t p = parser_new(&lx);
-  parser_parse(&p);
-  cr_assert_gt(p.error_count, 0);
-  cr_assert(strstr(p.errors[0], "multiple dots"));
+  parser_t parser = parser_new(&lx);
+  parser_parse(&parser);
+  cr_assert_gt(parser.error_count, 0);
+  cr_assert(strstr(parser.errors[0], "multiple dots"));
 }
 
 Test(parser_tests, it_parses_simple_dotted_pair) {
   lexer_t lx = lexer_new("(a . b)");
-  parser_t p = parser_new(&lx);
-  s_expression_t **sx = parser_parse(&p);
+  parser_t parser = parser_new(&lx);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
 
-  cr_assert_eq(p.error_count, 0);
-  /* one top-level list */
-  cr_assert_eq(sx[0]->type, NODE_LIST);
-  cr_assert_eq(sx[0]->data.list.count, 1);
-  cr_assert_str_eq(sx[0]->data.list.tail->data.atom.value.symbol, "b");
+  cr_assert_eq(parser.error_count, 0);
+  cr_assert_eq(sexp[0]->type, NODE_LIST);
+  cr_assert_eq(sexp[0]->data.list.count, 1);
+  cr_assert_str_eq(sexp[0]->data.list.tail->data.atom.value.symbol, "b");
 }
 
 Test(parser_error_tests, dot_before_any_element) {
   lexer_t lx = lexer_new("( . 1)");
-  parser_t p = parser_new(&lx);
-  parser_parse(&p);
+  parser_t parser = parser_new(&lx);
+  parser_parse(&parser);
 
-  cr_assert_gt(p.error_count, 0);
-  cr_assert(strstr(p.errors[0], "leading dot in list"));
+  cr_assert_gt(parser.error_count, 0);
+  cr_assert(strstr(parser.errors[0], "leading dot in list"));
 }
 
 Test(parser_error_tests, dot_outside_list) {
   lexer_t lx = lexer_new("(+ 1 3) . (- 3 1)");
-  parser_t p = parser_new(&lx);
-  parser_parse(&p);
+  parser_t parser = parser_new(&lx);
+  parser_parse(&parser);
 
-  cr_assert_gt(p.error_count, 0);
-  cr_assert(strstr(p.errors[0], "saw dot outside of list"));
+  cr_assert_gt(parser.error_count, 0);
+  cr_assert(strstr(parser.errors[0], "saw dot outside of list"));
 }
 
 Test(parser_tests, it_parses_quoted_atoms) {
   lexer_t lx = lexer_new("'5 'foo '\"meow\" '#t");
-  parser_t p = parser_new(&lx);
-  s_expression_t **sx = parser_parse(&p);
-  cr_assert_eq(p.error_count, 0);
+  parser_t parser = parser_new(&lx);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
 
-  cr_assert_eq(sx[0]->type, NODE_LIST);
-  cr_assert_eq(sx[0]->data.list.count, 2);
-  cr_assert_str_eq(sx[0]->data.list.elements[0]->data.atom.value.symbol,
-                   "quote");
-  cr_assert_eq(sx[0]->data.list.elements[1]->data.atom.value.number, 5);
+  cr_assert_eq(parser.error_count, 0);
 
-  cr_assert_eq(sx[1]->type, NODE_LIST);
-  cr_assert_eq(sx[1]->data.list.count, 2);
-  cr_assert_str_eq(sx[1]->data.list.elements[0]->data.atom.value.symbol,
+  cr_assert_eq(sexp[0]->type, NODE_LIST);
+  cr_assert_eq(sexp[0]->data.list.count, 2);
+  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol,
                    "quote");
-  cr_assert_str_eq(sx[1]->data.list.elements[1]->data.atom.value.symbol, "foo");
+  cr_assert_eq(sexp[0]->data.list.elements[1]->data.atom.value.number, 5);
 
-  cr_assert_eq(sx[2]->type, NODE_LIST);
-  cr_assert_eq(sx[2]->data.list.count, 2);
-  cr_assert_str_eq(sx[2]->data.list.elements[0]->data.atom.value.symbol,
+  cr_assert_eq(sexp[1]->type, NODE_LIST);
+  cr_assert_eq(sexp[1]->data.list.count, 2);
+  cr_assert_str_eq(sexp[1]->data.list.elements[0]->data.atom.value.symbol,
                    "quote");
-  cr_assert_str_eq(sx[2]->data.list.elements[1]->data.atom.value.string,
+  cr_assert_str_eq(sexp[1]->data.list.elements[1]->data.atom.value.symbol,
+                   "foo");
+
+  cr_assert_eq(sexp[2]->type, NODE_LIST);
+  cr_assert_eq(sexp[2]->data.list.count, 2);
+  cr_assert_str_eq(sexp[2]->data.list.elements[0]->data.atom.value.symbol,
+                   "quote");
+  cr_assert_str_eq(sexp[2]->data.list.elements[1]->data.atom.value.string,
                    "meow");
 
-  cr_assert_eq(sx[2]->type, NODE_LIST);
-  cr_assert_eq(sx[2]->data.list.count, 2);
-  cr_assert_str_eq(sx[2]->data.list.elements[0]->data.atom.value.symbol,
+  cr_assert_eq(sexp[2]->type, NODE_LIST);
+  cr_assert_eq(sexp[2]->data.list.count, 2);
+  cr_assert_str_eq(sexp[2]->data.list.elements[0]->data.atom.value.symbol,
                    "quote");
-  cr_assert_eq(sx[2]->data.list.elements[1]->data.atom.value.boolean, true);
+  cr_assert_eq(sexp[2]->data.list.elements[1]->data.atom.value.boolean, true);
 }
 
 Test(parser_tests, it_parses_quoted_lists) {
   lexer_t lx = lexer_new("'(1 2 3) '(foo bar (baz qux))");
-  parser_t p = parser_new(&lx);
-  s_expression_t **sx = parser_parse(&p);
-  cr_assert_eq(p.error_count, 0);
+  parser_t parser = parser_new(&lx);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
 
-  cr_assert_eq(sx[0]->type, NODE_LIST);
-  cr_assert_eq(sx[0]->data.list.count, 2);
-  cr_assert_str_eq(sx[0]->data.list.elements[0]->data.atom.value.symbol,
-                   "quote");
-  cr_assert_eq(sx[0]->data.list.elements[1]->type, NODE_LIST);
-  cr_assert_eq(sx[0]->data.list.elements[1]->data.list.count, 3);
+  cr_assert_eq(parser.error_count, 0);
 
-  cr_assert_eq(sx[1]->type, NODE_LIST);
-  cr_assert_eq(sx[1]->data.list.count, 2);
-  cr_assert_str_eq(sx[1]->data.list.elements[0]->data.atom.value.symbol,
+  cr_assert_eq(sexp[0]->type, NODE_LIST);
+  cr_assert_eq(sexp[0]->data.list.count, 2);
+  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol,
                    "quote");
-  cr_assert_eq(sx[1]->data.list.elements[1]->type, NODE_LIST);
-  cr_assert_eq(sx[1]->data.list.elements[1]->data.list.count, 3);
+  cr_assert_eq(sexp[0]->data.list.elements[1]->type, NODE_LIST);
+  cr_assert_eq(sexp[0]->data.list.elements[1]->data.list.count, 3);
+
+  cr_assert_eq(sexp[1]->type, NODE_LIST);
+  cr_assert_eq(sexp[1]->data.list.count, 2);
+  cr_assert_str_eq(sexp[1]->data.list.elements[0]->data.atom.value.symbol,
+                   "quote");
+  cr_assert_eq(sexp[1]->data.list.elements[1]->type, NODE_LIST);
+  cr_assert_eq(sexp[1]->data.list.elements[1]->data.list.count, 3);
 }
 
 Test(parser_tests, it_parses_quasiquote_with_unquotes) {
   lexer_t lx = lexer_new("`(a ,b ,@c)");
-  parser_t p = parser_new(&lx);
-  s_expression_t **sx = parser_parse(&p);
+  parser_t parser = parser_new(&lx);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
 
-  cr_assert_eq(p.error_count, 0);
+  cr_assert_eq(parser.error_count, 0);
 
-  cr_assert_eq(sx[0]->type, NODE_LIST);
-  cr_assert_eq(sx[0]->data.list.count, 2);
-  cr_assert_str_eq(sx[0]->data.list.elements[0]->data.atom.value.symbol,
+  cr_assert_eq(sexp[0]->type, NODE_LIST);
+  cr_assert_eq(sexp[0]->data.list.count, 2);
+  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol,
                    "quasiquote");
 
-  s_expression_t *inner = sx[0]->data.list.elements[1];
+  s_expression_t *inner = sexp[0]->data.list.elements[1];
   cr_assert_eq(inner->type, NODE_LIST);
   cr_assert_eq(inner->data.list.count, 3);
 
@@ -324,20 +339,21 @@ Test(parser_tests, it_parses_quasiquote_with_unquotes) {
 
 Test(parser_tests, it_parses_unquote_and_unquote_splicing_atoms) {
   lexer_t lx = lexer_new(",x ,@y");
-  parser_t p = parser_new(&lx);
-  s_expression_t **sx = parser_parse(&p);
+  parser_t parser = parser_new(&lx);
+  parse_result_t r = parser_parse(&parser);
+  s_expression_t **sexp = r.expressions;
 
-  cr_assert_eq(p.error_count, 0);
+  cr_assert_eq(parser.error_count, 0);
 
-  cr_assert_eq(sx[0]->type, NODE_LIST);
-  cr_assert_eq(sx[0]->data.list.count, 2);
-  cr_assert_str_eq(sx[0]->data.list.elements[0]->data.atom.value.symbol,
+  cr_assert_eq(sexp[0]->type, NODE_LIST);
+  cr_assert_eq(sexp[0]->data.list.count, 2);
+  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol,
                    "unquote");
-  cr_assert_str_eq(sx[0]->data.list.elements[1]->data.atom.value.symbol, "x");
+  cr_assert_str_eq(sexp[0]->data.list.elements[1]->data.atom.value.symbol, "x");
 
-  cr_assert_eq(sx[1]->type, NODE_LIST);
-  cr_assert_eq(sx[1]->data.list.count, 2);
-  cr_assert_str_eq(sx[1]->data.list.elements[0]->data.atom.value.symbol,
+  cr_assert_eq(sexp[1]->type, NODE_LIST);
+  cr_assert_eq(sexp[1]->data.list.count, 2);
+  cr_assert_str_eq(sexp[1]->data.list.elements[0]->data.atom.value.symbol,
                    "unquote-splicing");
-  cr_assert_str_eq(sx[1]->data.list.elements[1]->data.atom.value.symbol, "y");
+  cr_assert_str_eq(sexp[1]->data.list.elements[1]->data.atom.value.symbol, "y");
 }

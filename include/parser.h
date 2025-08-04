@@ -39,6 +39,11 @@ typedef struct s_expression {
   } data;
 } s_expression_t; 
 
+typedef struct parse_result {
+  s_expression_t **expressions;
+  size_t count;
+} parse_result_t;
+
 typedef struct parser {
   lexer_t *lexer;
   token_t current_token;
@@ -52,6 +57,6 @@ void parser_add_error(parser_t *parser, const char *fmt, ...);
 void parser_clear_errors(parser_t *parser);
 parser_t parser_new(lexer_t *lexer);
 void parser_free(parser_t *parser);
-s_expression_t **parser_parse(parser_t *parser);
+parse_result_t parser_parse(parser_t *parser);
 
 #endif
