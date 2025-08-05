@@ -70,7 +70,7 @@ asan-main: $(ASAN_TARGET)
 
 asan-test: $(ASAN_TEST_BIN)
 	@echo "=== Running tests with ASAN ==="
-	@./$(ASAN_TEST_BIN)
+	@MallocNanoZone=0 ./$(ASAN_TEST_BIN)
 
 asan: asan-main asan-test
 
