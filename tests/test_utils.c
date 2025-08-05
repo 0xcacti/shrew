@@ -2,8 +2,6 @@
 #include <criterion/criterion.h>
 #include <string.h>
 
-// Helper to create an owned C‑string key for tests that survives until
-// ht_destroy.
 static char *dup(const char *s) {
   size_t n = strlen(s) + 1;
   char *p = malloc(n);
