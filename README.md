@@ -9,9 +9,9 @@ it's always good to write a lisp when learning a new language.
 
 - [x] Implement token
 - [x] Implement lexer
-- [ ] Implement parser 
+- [x] Implement parser 
     - [x] Implement parsing of atoms 
-    - [ ] Implement parsing of lists
+    - [x] Implement parsing of lists
 - [ ] Implement evaluator 
 - [ ] Implement CLI tool
     - [ ] Repl 
