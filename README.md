@@ -12,7 +12,7 @@ it's always good to write a lisp when learning a new language.
 - [x] Implement parser 
     - [x] Implement parsing of atoms 
     - [x] Implement parsing of lists
-- [ ] Implement hashtable
+- [x] Implement hashtable
 - [ ] Implement evaluator 
 - [ ] Implement CLI tool
     - [ ] Repl 
