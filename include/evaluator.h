@@ -20,6 +20,8 @@ typedef struct env {
   hashtable *store;   
 } env_t;
 
+s_expression_t *env_get(env_t *env, const char *key);
+
 eval_result_t evaluate_single(s_expression_t *expr, env_t *env);
 eval_result_t evaluatate_many(s_expression_t **exprs, size_t count, env_t *env);
 void evaluator_result_free(eval_result_t *r);
