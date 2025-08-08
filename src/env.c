@@ -3,21 +3,19 @@
 #include "parser.h"
 #include <stdlib.h>
 
-bool env_init(env_t *env, env_t *parent) {
-  if (!env)
-    return false;
-  env->parent = parent;
-  env->store = (struct hashtable *)malloc(sizeof *env->store);
-  if (!env->store)
-    return false;
-
-  hashtable ht;
-  ht_error err = {0};
-  ht_init(&ht, 16, &err);
-
-  env->parent = parent;
-  env->store = &ht;
-}
+// bool env_init(env_t *env, env_t *parent) {
+//   if (!env) return false;
+//   env->parent = parent;
+//   env->store = (struct hashtable *)malloc(sizeof *env->store);
+//   if (!env->store) return false;
+//
+//   hashtable ht;
+//   ht_error err = { 0 };
+//   ht_init(&ht, 16, &err);
+//
+//   env->parent = parent;
+//   env->store = &ht;
+// }
 
 // Test(hashtable, init_and_destroy) {
 //   hashtable t;
