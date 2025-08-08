@@ -1,6 +1,6 @@
 #include "evaluator.h"
+#include "hashtable.h"
 #include "parser.h"
-#include "utils.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>

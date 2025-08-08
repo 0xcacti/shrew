@@ -2,7 +2,7 @@
 #define EVALUATOR_H
 
 #include "parser.h"
-#include "utils.h"
+#include "hashtable.h"
 
 struct hashtable;
 

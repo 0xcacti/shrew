@@ -1,5 +1,5 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef HASHTABLE_H
+#define HASHTABLE_H
 
 #include <stdbool.h>
 #include <stddef.h>
