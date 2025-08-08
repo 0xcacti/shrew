@@ -2,7 +2,7 @@
 #define EVALUATOR_H
 
 #include "parser.h"
-#include "hashtable.h"
+#include "env.h"
 
 struct hashtable;
 
@@ -17,12 +17,6 @@ typedef struct {
   char *error_message; 
 } eval_result_t;
 
-typedef struct env {
-  struct env *parent; 
-  hashtable *store;   
-} env_t;
-
-s_expression_t *env_get(env_t *env, const char *key);
 
 eval_result_t evaluate_single(s_expression_t *expr, env_t *env);
 eval_result_t evaluatate_many(s_expression_t **exprs, size_t count, env_t *env);
