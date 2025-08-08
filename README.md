@@ -15,7 +15,7 @@ it's always good to write a lisp when learning a new language.
 - [x] Implement hashtable
 - [ ] Implement evaluator 
     - [x] Implement symbol interning 
-    - [ ] Implement lvals 
+    - [x] Implement lvals 
     - [ ] Implement env 
     - [ ] Implement atom evaluation 
     - [ ] Implement list evaluation 
