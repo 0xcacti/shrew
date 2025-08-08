@@ -14,6 +14,12 @@ it's always good to write a lisp when learning a new language.
     - [x] Implement parsing of lists
 - [x] Implement hashtable
 - [ ] Implement evaluator 
+    - [ ] Implement symbol interning 
+    - [ ] Implement lvals 
+    - [ ] Implement env 
+    - [ ] Implement atom evaluation 
+    - [ ] Implement list evaluation 
+    - [ ] Implement built-in functions
 - [ ] Implement CLI tool
     - [ ] Repl 
     - [ ] File execution 
