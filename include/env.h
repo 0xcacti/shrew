@@ -15,5 +15,6 @@ void env_destroy(env_t *env);
 bool env_define(env_t *env, const char *key, lval_t *value);
 bool env_set(env_t *env, const char *key, lval_t *value);
 lval_t *env_get(env_t *env, const char *key);
+lval_t *env_get_ref(env_t *env, const char *key);
 
 #endif

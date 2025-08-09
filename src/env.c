@@ -69,3 +69,14 @@ lval_t *env_get(env_t *env, const char *key) {
   }
   return NULL;
 }
+
+lval_t *env_get_ref(env_t *env, const char *key) {
+  if (!env || !key) return NULL;
+  for (env_t *e = env; e; e = e->parent) {
+    void *value = NULL;
+    if (ht_get(e->store, key, &value)) {
+      return (lval_t *)value;
+    }
+  }
+  return NULL;
+}

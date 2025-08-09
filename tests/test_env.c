@@ -51,10 +51,10 @@ Test(env_tests, define_shadows_parent) {
   cr_assert(env_define(&parent, "x", vp));
   cr_assert(env_define(&child, "x", vc));
 
-  lval_t *got_child = env_get(&child, "x");
+  lval_t *got_child = env_get_ref(&child, "x");
   cr_assert(got_child == vc, "child should see its own binding");
 
-  lval_t *got_parent = env_get(&parent, "x");
+  lval_t *got_parent = env_get_ref(&parent, "x");
   cr_assert(got_parent == vp, "parent binding should be unchanged");
 
   env_destroy(&child);
@@ -74,10 +74,10 @@ Test(env_tests, set_updates_nearest_existing_binding) {
 
   cr_assert(env_set(&child, "y", newp), "set should update parent binding");
 
-  lval_t *got_parent = env_get(&parent, "y");
+  lval_t *got_parent = env_get_ref(&parent, "y");
   cr_assert(got_parent == newp);
 
-  lval_t *got_child = env_get(&child, "y");
+  lval_t *got_child = env_get_ref(&child, "y");
   cr_assert(got_child == newp);
 
   env_destroy(&child);

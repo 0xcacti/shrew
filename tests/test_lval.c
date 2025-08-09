@@ -59,6 +59,24 @@ Test(lval_tests, it_creates_bool) {
   symbol_intern_free_all();
 }
 
+Test(lval_tests, it_creates_cons) {
+  symbol_intern_init();
+  lval_t *car = lval_num(42);
+  lval_t *cdr = lval_string_copy("test_string", 11);
+  lval_t *cons = lval_cons(car, cdr);
+
+  cr_assert_not_null(cons, "lval cons should not be NULL");
+  cr_assert_eq(cons->type, L_CONS, "lval type should be L_CONS");
+  cr_assert_eq(cons->as.cons.car->type, L_NUM, "car type should be L_NUM");
+  cr_assert_eq(cons->as.cons.cdr->type, L_STRING, "cdr type should be L_STRING");
+  cr_assert_eq(cons->as.cons.car->as.number, 42, "car number should be 42");
+  cr_assert_str_eq(
+      cons->as.cons.cdr->as.string.ptr, "test_string", "cdr string should be 'test_string'");
+
+  lval_free(cons);
+  symbol_intern_free_all();
+}
+
 Test(lval_tests, it_gets_type_name) {
   symbol_intern_init();
   lval_t *num = lval_num(42);
