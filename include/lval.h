@@ -27,6 +27,7 @@ lval_t *lval_num(double x);
 lval_t *lval_bool(bool b);
 lval_t *lval_string_copy(const char *s, size_t len);
 lval_t *lval_intern(const char *name);
+lval_t *lval_nil(void);
 const char *lval_type_name(const lval_t *v);
 void lval_print(const lval_t *v);
 void lval_free(lval_t *v);
