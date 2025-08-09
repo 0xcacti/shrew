@@ -1,10 +1,12 @@
 #include "env.h"
 #include "evaluator.h"
 #include "lexer.h"
+#include "lval.h"
 #include "parser.h"
 #include "symbol.h"
 #include <criterion/criterion.h>
 #include <math.h>
+#include <stdbool.h>
 
 parse_result_t setup_input(const char *input, parser_t *out_parser) {
   lexer_t lexer = lexer_new(input);
@@ -90,6 +92,55 @@ Test(evaluator_tests, evaluate_boolean_atom) {
   cr_assert(!res.result->as.boolean);
 
   lval_free(res.result);
+  evaluator_result_free(&res);
+  parse_result_free(&pr);
+  parser_free(&parser);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(evaluator_tests, evaluate_predefined_symbol) {
+  symbol_intern_init();
+
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  bool success = env_define(&env, "meow", lval_num(42));
+  cr_assert(success, "Failed to define 'meow' in the environment");
+
+  parser_t parser = { 0 };
+  parse_result_t pr = setup_input("meow", &parser);
+
+  s_expression_t *expr = pr.expressions[0];
+  eval_result_t res = evaluate_single(expr, &env);
+
+  cr_assert_eq(res.status, EVAL_OK);
+  cr_assert_not_null(res.result);
+  cr_assert_eq(res.result->type, L_NUM);
+  cr_assert(fabs(res.result->as.number - 42.0) < 1e-9);
+
+  lval_free(res.result);
+  evaluator_result_free(&res);
+  parse_result_free(&pr);
+  parser_free(&parser);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(evaluator_tests, evaluate_unbound_symbol_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t parser = { 0 };
+  parse_result_t pr = setup_input("does-not-exist", &parser);
+
+  s_expression_t *expr = pr.expressions[0];
+  eval_result_t res = evaluate_single(expr, &env);
+
+  cr_assert_eq(res.status, EVAL_ERR);
+  cr_assert_not_null(res.error_message);
+  cr_assert(strstr(res.error_message, "does-not-exist") != NULL);
+
   evaluator_result_free(&res);
   parse_result_free(&pr);
   parser_free(&parser);
