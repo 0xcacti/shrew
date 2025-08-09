@@ -66,7 +66,8 @@ parser_t parser_new(lexer_t *lexer) {
     .next_token = lexer_next_token(lexer),
     .errors = NULL,
     .error_count = 0,
-    .error_capacity = 0
+    .error_capacity = 0,
+    .qq_depth = 0,
   };
   // clang-format on
 
@@ -84,9 +85,9 @@ void parser_next(parser_t *parser) {
 
 s_expression_t *parser_parse_list(parser_t *parser) {
   if (parser->current_token.type != TOKEN_LPAREN) {
-    parser_add_error(
-        parser, "internal: parser_parse_list called when current token is '%s'",
-        parser->current_token.literal);
+    parser_add_error(parser,
+                     "internal: parser_parse_list called when current token is '%s'",
+                     parser->current_token.literal);
     return NULL;
   }
   parser_next(parser);
@@ -131,9 +132,8 @@ s_expression_t *parser_parse_list(parser_t *parser) {
       }
 
       if (parser->current_token.type != TOKEN_RPAREN) {
-        parser_add_error(parser,
-                         "expected ')' after dotted tail but found '%s'",
-                         parser->current_token.literal);
+        parser_add_error(
+            parser, "expected ')' after dotted tail but found '%s'", parser->current_token.literal);
         goto fail;
       }
       continue;
@@ -141,8 +141,8 @@ s_expression_t *parser_parse_list(parser_t *parser) {
 
     s_expression_t *element = parser_parse_s_expression(parser);
     if (!element) {
-      parser_add_error(parser, "expected expression in list but found '%s'",
-                       parser->current_token.literal);
+      parser_add_error(
+          parser, "expected expression in list but found '%s'", parser->current_token.literal);
       goto fail;
     }
 
@@ -159,8 +159,7 @@ s_expression_t *parser_parse_list(parser_t *parser) {
   }
 
   if (parser->current_token.type != TOKEN_RPAREN) {
-    parser_add_error(parser, "expected ')' but found '%s'",
-                     parser->current_token.literal);
+    parser_add_error(parser, "expected ')' but found '%s'", parser->current_token.literal);
     goto fail;
   }
 
@@ -185,7 +184,7 @@ fail:
 }
 
 s_expression_t *parser_parse_atom(parser_t *parser) {
-  atom_t atom = {0};
+  atom_t atom = { 0 };
   char *literal = parser->current_token.literal;
 
   switch (parser->current_token.type) {
@@ -236,8 +235,10 @@ s_expression_t *parser_parse_atom(parser_t *parser) {
     parser->current_token.literal = NULL;
     break;
   default:
-    parser_add_error(parser, "Expected atom but found '%s' at %zu:%zu",
-                     parser->current_token.literal, parser->current_token.line,
+    parser_add_error(parser,
+                     "Expected atom but found '%s' at %zu:%zu",
+                     parser->current_token.literal,
+                     parser->current_token.line,
                      parser->current_token.column);
     return NULL;
   }
@@ -271,7 +272,7 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
   }
 
   // make quote
-  atom_t quote_atom = {0};
+  atom_t quote_atom = { 0 };
   quote_atom.type = ATOM_SYMBOL;
   switch (token_type) {
   case TOKEN_QUOTE:
@@ -288,15 +289,14 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
     quote_atom.value.symbol = "unquote-splicing";
     if (parser->qq_depth == 0) {
       parser_add_error(parser, "unquote-splicing outside quasiquote");
+      return NULL;
     }
     break;
   case TOKEN_QUASIQUOTE:
     quote_atom.value.symbol = "quasiquote";
     break;
   default:
-    parser_add_error(parser,
-                     "internal: unexpected token type %d in quote family",
-                     token_type);
+    parser_add_error(parser, "internal: unexpected token type %d in quote family", token_type);
   }
   s_expression_t *quote_symbol = malloc(sizeof(s_expression_t));
   if (!quote_symbol) {
@@ -345,21 +345,29 @@ s_expression_t *parser_parse_s_expression(parser_t *parser) {
   case TOKEN_LPAREN:
     return parser_parse_list(parser);
   case TOKEN_RPAREN:
-    parser_add_error(parser, "unexpected ')' at %zu:%zu",
-                     parser->current_token.line, parser->current_token.column);
+    parser_add_error(parser,
+                     "unexpected ')' at %zu:%zu",
+                     parser->current_token.line,
+                     parser->current_token.column);
     return NULL;
   case TOKEN_EOF:
-    parser_add_error(parser, "unexpected end-of-file at %zu:%zu",
-                     parser->current_token.line, parser->current_token.column);
+    parser_add_error(parser,
+                     "unexpected end-of-file at %zu:%zu",
+                     parser->current_token.line,
+                     parser->current_token.column);
     return NULL;
   case TOKEN_INVALID:
-    parser_add_error(parser, "invalid token '%s' at %zu:%zu",
-                     parser->current_token.literal, parser->current_token.line,
+    parser_add_error(parser,
+                     "invalid token '%s' at %zu:%zu",
+                     parser->current_token.literal,
+                     parser->current_token.line,
                      parser->current_token.column);
     return NULL;
   case TOKEN_DOT:
-    parser_add_error(parser, "saw dot outside of list at %zu:%zu",
-                     parser->current_token.literal, parser->current_token.line,
+    parser_add_error(parser,
+                     "saw dot outside of list at %zu:%zu",
+                     parser->current_token.literal,
+                     parser->current_token.line,
                      parser->current_token.column);
     return NULL;
   case TOKEN_QUOTE:
@@ -396,15 +404,14 @@ parse_result_t parser_parse(parser_t *parser) {
   }
 
   parse_result_t result = {
-      .expressions = exprs,
-      .count = expr_count,
+    .expressions = exprs,
+    .count = expr_count,
   };
   return result;
 }
 
 void sexp_free(s_expression_t *n) {
-  if (!n)
-    return;
+  if (!n) return;
 
   switch (n->type) {
   case NODE_ATOM:
@@ -441,5 +448,5 @@ void parse_result_free(parse_result_t *result) {
   free(result->expressions);
   result->expressions = NULL;
   result->count = 0;
-  *result = (parse_result_t){0};
+  *result = (parse_result_t){ 0 };
 }

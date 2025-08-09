@@ -7,6 +7,24 @@
 #include <stdlib.h>
 #include <string.h>
 
+static bool is_proper_call_list(const s_expression_t *list) {
+  return list->data.list.tail == NULL;
+}
+
+static bool sexp_is_symbol(const s_expression_t *sexp, const char **out_name) {
+  if (sexp->type != NODE_ATOM) return false;
+  if (sexp->data.atom.type != ATOM_SYMBOL) return false;
+  if (out_name) *out_name = sexp->data.atom.value.symbol;
+  return true;
+}
+
+typedef eval_result_t (*special_form_fn)(s_expression_t *list, env_t *env);
+
+static special_form_fn lookup_special_form(const char *name) {
+  (void)name;
+  return NULL;
+}
+
 eval_result_t eval_ok(lval_t *result) {
   eval_result_t r = { 0 };
   r.status = EVAL_OK;
@@ -66,8 +84,22 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
     }
   }
   case NODE_LIST:
-    fprintf(stderr, "List evaluation not implemented yet.\n");
-    exit(EXIT_FAILURE); // TODO: Implement list evaluation
+    if (expr->data.list.count == 0 && expr->data.list.tail == NULL) {
+      return eval_ok(lval_nil());
+    }
+
+    if (!is_proper_call_list(expr)) {
+      return eval_errf("Dotted list cannot be used as a function call");
+    }
+
+    s_expression_t *head = expr->data.list.elements[0];
+    const char *head_name = NULL;
+    if (sexp_is_symbol(head, &head_name)) {
+      special_form_fn sf = lookup_special_form(head_name);
+      if (sf) {
+        return sf(expr, env);
+      }
+    }
   default:
     return eval_errf("Unknown expression type: %d", expr->type);
   }
