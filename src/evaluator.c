@@ -2,6 +2,7 @@
 #include "env.h"
 #include "lval.h"
 #include "parser.h"
+#include "special.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -16,13 +17,6 @@ static bool sexp_is_symbol(const s_expression_t *sexp, const char **out_name) {
   if (sexp->data.atom.type != ATOM_SYMBOL) return false;
   if (out_name) *out_name = sexp->data.atom.value.symbol;
   return true;
-}
-
-typedef eval_result_t (*special_form_fn)(s_expression_t *list, env_t *env);
-
-static special_form_fn lookup_special_form(const char *name) {
-  (void)name;
-  return NULL;
 }
 
 eval_result_t eval_ok(lval_t *result) {
@@ -96,10 +90,10 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
     const char *head_name = NULL;
     if (sexp_is_symbol(head, &head_name)) {
       special_form_fn sf = lookup_special_form(head_name);
-      if (sf) {
-        return sf(expr, env);
-      }
+      if (sf) return sf(expr, env);
     }
+    return eval_errf("Unknown function: %s", head_name ? head_name : "unknown");
+
   default:
     return eval_errf("Unknown expression type: %d", expr->type);
   }
