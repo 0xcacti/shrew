@@ -4,8 +4,6 @@
 #include "parser.h"
 #include "env.h"
 
-struct hashtable;
-
 typedef enum {
   EVAL_OK = 0, 
   EVAL_ERR = 1,

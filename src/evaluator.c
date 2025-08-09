@@ -1,9 +1,11 @@
 #include "evaluator.h"
 #include "env.h"
+#include "lval.h"
 #include "parser.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 eval_result_t eval_ok(lval_t *result) {
   eval_result_t r = { 0 };
@@ -39,25 +41,35 @@ eval_result_t eval_errf(const char *fmt, ...) {
 }
 
 eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
+  if (!expr) return eval_errf("Cannot evaluate a NULL expression.");
+
   switch (expr->type) {
-  case NODE_ATOM:
-    switch (expr->data.atom.type) {
+  case NODE_ATOM: {
+    atom_t *a = &expr->data.atom;
+    switch (a->type) {
     case ATOM_NUMBER:
+      return eval_ok(lval_num(a->value.number));
     case ATOM_BOOLEAN:
-    case ATOM_STRING:
-      return eval_ok(expr);
+      return eval_ok(lval_bool(a->value.boolean));
+    case ATOM_STRING: {
+      const char *str = a->value.string;
+      return eval_ok(lval_string_copy(a->value.string, strlen(str)));
+    }
     case ATOM_SYMBOL: {
-      lval_t *found = env_get(env, expr->data.atom.value.symbol);
-      if (found) {
-        return eval_ok(found);
-      } else {
-        return eval_errf("Unbound symbol: %s", expr->data.atom.value.symbol);
-      }
+      const char *name = a->value.symbol;
+      lval_t *found = env_get(env, name);
+      if (found) return eval_ok(found);
+      return eval_errf("Unbound symbol: %s", name);
     }
+    default:
+      return eval_errf("Unknown atom type: %d", a->type);
     }
+  }
   case NODE_LIST:
     fprintf(stderr, "List evaluation not implemented yet.\n");
     exit(EXIT_FAILURE); // TODO: Implement list evaluation
+  default:
+    return eval_errf("Unknown expression type: %d", expr->type);
   }
 }
 
@@ -71,6 +83,4 @@ void evaluator_result_free(eval_result_t *r) {
 
   r->result = NULL;
   r->status = EVAL_OK;
-
-  free(r);
 }

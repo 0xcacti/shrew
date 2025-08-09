@@ -1,6 +1,5 @@
 #include "env.h"
 #include "hashtable.h"
-#include "parser.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
