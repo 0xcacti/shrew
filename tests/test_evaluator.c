@@ -147,3 +147,115 @@ Test(evaluator_tests, evaluate_unbound_symbol_errors) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(evaluator_tests, evaluate_symbol_env_chain_and_shadowing) {
+  symbol_intern_init();
+
+  env_t parent;
+  cr_assert(env_init(&parent, NULL));
+  env_t child;
+  cr_assert(env_init(&child, &parent));
+
+  cr_assert(env_define(&parent, "x", lval_num(1)));
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("x", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &child);
+    cr_assert_eq(r.status, EVAL_OK);
+    cr_assert_eq(r.result->type, L_NUM);
+    cr_assert(fabs(r.result->as.number - 1.0) < 1e-9);
+    lval_free(r.result);
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+
+  cr_assert(env_define(&child, "x", lval_num(2)));
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("x", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &child);
+    cr_assert_eq(r.status, EVAL_OK);
+    cr_assert_eq(r.result->type, L_NUM);
+    cr_assert(fabs(r.result->as.number - 2.0) < 1e-9);
+    lval_free(r.result);
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+
+  env_destroy(&child);
+  env_destroy(&parent);
+  symbol_intern_free_all();
+}
+
+Test(evaluator_tests, evaluate_literal_allocates_fresh_lval_each_time) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t parser = { 0 };
+  parse_result_t pr = setup_input("7", &parser);
+
+  s_expression_t *expr = pr.expressions[0];
+  eval_result_t r1 = evaluate_single(expr, &env);
+  eval_result_t r2 = evaluate_single(expr, &env);
+
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert_neq(r1.result, r2.result, "Expected distinct lval allocations per eval()");
+  cr_assert_eq(r1.result->type, L_NUM);
+  cr_assert_eq(r2.result->type, L_NUM);
+  cr_assert(fabs(r1.result->as.number - 7.0) < 1e-9);
+  cr_assert(fabs(r2.result->as.number - 7.0) < 1e-9);
+
+  lval_free(r1.result);
+  lval_free(r2.result);
+  evaluator_result_free(&r1);
+  evaluator_result_free(&r2);
+  parse_result_free(&pr);
+  parser_free(&parser);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(evaluator_tests, evaluate_null_expr_is_error) {
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  eval_result_t r = evaluate_single(NULL, &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  env_destroy(&env);
+}
+
+Test(evaluator_tests, evaluate_string_allocates_fresh_copy_each_time) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t parser = { 0 };
+  parse_result_t pr = setup_input("\"abc\"", &parser);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  eval_result_t r2 = evaluate_single(pr.expressions[0], &env);
+
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert_eq(r1.result->type, L_STRING);
+  cr_assert_eq(r2.result->type, L_STRING);
+  cr_assert_str_eq(r1.result->as.string.ptr, "abc");
+  cr_assert_str_eq(r2.result->as.string.ptr, "abc");
+  cr_assert_neq(r1.result->as.string.ptr,
+                r2.result->as.string.ptr,
+                "Distinct heap buffers expected for each string literal evaluation");
+
+  lval_free(r1.result);
+  lval_free(r2.result);
+  evaluator_result_free(&r1);
+  evaluator_result_free(&r2);
+  parse_result_free(&pr);
+  parser_free(&parser);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
