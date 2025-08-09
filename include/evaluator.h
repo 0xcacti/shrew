@@ -13,7 +13,7 @@ typedef enum {
 
 typedef struct {
   eval_status_t status; 
-  s_expression_t *result; 
+  lval_t *result; 
   char *error_message; 
 } eval_result_t;
 

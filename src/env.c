@@ -1,26 +1,72 @@
 #include "env.h"
 #include "hashtable.h"
 #include "parser.h"
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-// bool env_init(env_t *env, env_t *parent) {
-//   if (!env) return false;
-//   env->parent = parent;
-//   env->store = (struct hashtable *)malloc(sizeof *env->store);
-//   if (!env->store) return false;
-//
-//   hashtable ht;
-//   ht_error err = { 0 };
-//   ht_init(&ht, 16, &err);
-//
-//   env->parent = parent;
-//   env->store = &ht;
-// }
+bool env_init(env_t *env, env_t *parent) {
+  if (!env) return false;
+  env->parent = parent;
 
-// Test(hashtable, init_and_destroy) {
-//   hashtable t;
-//   ht_error err = {0};
-//   cr_assert(ht_init(&t, 16, &err), "init failed: %s", err.error_message);
-//   cr_assert_eq(ht_count(&t), 0, "new table should be empty");
-//   ht_destroy(&t);
-// }
+  env->store = malloc(sizeof *env->store);
+  if (!env->store) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+
+  ht_error err = (ht_error){ 0 };
+  if (!ht_init(env->store, 16, &err)) {
+    fprintf(stderr,
+            "env_init: ht_init failed: %s\n",
+            err.error_message ? err.error_message : "(unknown)");
+    free(env->store);
+    env->store = NULL;
+    exit(EXIT_FAILURE);
+  }
+  return true;
+}
+
+void env_destroy(env_t *env) {
+  if (!env || !env->store) return;
+  ht_destroy(env->store);
+  free(env->store);
+  env->store = NULL;
+}
+
+bool env_define(env_t *env, const char *key, lval_t *value) {
+  if (!env || !env->store || !key || !value) return false;
+  ht_error err = { 0 };
+  if (!ht_set(env->store, key, value, &err)) {
+    fprintf(stderr, "Error defining key '%s': %s\n", key, err.error_message);
+    exit(EXIT_FAILURE);
+  }
+  return true;
+}
+
+bool env_set(env_t *env, const char *key, lval_t *value) {
+  if (!env || !key) return false;
+  for (env_t *e = env; e; e = e->parent) {
+    void *tmp = NULL;
+    if (ht_get(e->store, key, &tmp)) {
+      ht_error err = { 0 };
+      if (!ht_set(e->store, key, value, &err)) {
+        fprintf(stderr, "Error setting key '%s': %s\n", key, err.error_message);
+        exit(EXIT_FAILURE);
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+lval_t *env_get(env_t *env, const char *key) {
+  if (!env || !key) return NULL;
+  for (env_t *e = env; e; e = e->parent) {
+    void *value = NULL;
+    if (ht_get(e->store, key, &value)) {
+      return (lval_t *)value;
+    }
+  }
+  return NULL;
+}
