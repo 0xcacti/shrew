@@ -259,3 +259,27 @@ Test(evaluator_tests, evaluate_string_allocates_fresh_copy_each_time) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(evaluator_test, evaluate_empty_list) {
+  symbol_intern_init();
+
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t parser = { 0 };
+  parse_result_t pr = setup_input("()", &parser);
+
+  s_expression_t *expr = pr.expressions[0];
+  eval_result_t res = evaluate_single(expr, &env);
+
+  cr_assert_eq(res.status, EVAL_OK);
+  cr_assert_not_null(res.result);
+  cr_assert_eq(res.result->type, L_NIL);
+
+  lval_free(res.result);
+  evaluator_result_free(&res);
+  parse_result_free(&pr);
+  parser_free(&parser);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
