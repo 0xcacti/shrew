@@ -9,7 +9,7 @@
 #include "special.h"
 
 // Helpers
-eval_result_t ast_atom_to_lval(const atom_t *a) {
+static eval_result_t ast_atom_to_lval(const atom_t *a) {
   switch (a->type) {
   case ATOM_NUMBER:
     return eval_ok(lval_num(a->value.number));

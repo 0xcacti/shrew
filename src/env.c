@@ -64,7 +64,7 @@ lval_t *env_get(env_t *env, const char *key) {
   for (env_t *e = env; e; e = e->parent) {
     void *value = NULL;
     if (ht_get(e->store, key, &value)) {
-      return (lval_t *)value;
+      return lval_copy((lval_t *)value);
     }
   }
   return NULL;
