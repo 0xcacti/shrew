@@ -54,6 +54,14 @@ lval_t *lval_intern(const char *name) {
   return v;
 }
 
+lval_t *lval_nil(void) {
+  lval_t *v = malloc(sizeof(lval_t));
+  if (!v) return NULL;
+  v->mark = 0;
+  v->type = L_NIL;
+  return v;
+}
+
 const char *lval_type_name(const lval_t *v) {
   switch (v->type) {
   case L_NUM:
@@ -64,6 +72,8 @@ const char *lval_type_name(const lval_t *v) {
     return "boolean";
   case L_SYMBOL:
     return "symbol";
+  case L_NIL:
+    return "nil";
   default:
     return "unknown";
   }
@@ -90,4 +100,20 @@ void lval_print(const lval_t *v) {
     printf("<unknown>");
     break;
   }
+}
+
+void lval_free(lval_t *v) {
+  if (!v) return;
+  switch (v->type) {
+  case L_STRING:
+    free(v->as.string.ptr);
+    break;
+  case L_SYMBOL:
+  case L_NIL:
+  case L_NUM:
+  case L_BOOL:
+  default:
+    break;
+  }
+  free(v);
 }
