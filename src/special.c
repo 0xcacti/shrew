@@ -8,8 +8,12 @@
 #include "parser.h"
 #include "special.h"
 
-// Helpers
-static eval_result_t ast_atom_to_lval(const atom_t *a) {
+// forward declarations
+//
+static eval_result_t ast_to_quoted_lval(const s_expression_t *e);
+static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list);
+
+static eval_result_t ast_atom_to_quoted_lval(const atom_t *a) {
   switch (a->type) {
   case ATOM_NUMBER:
     return eval_ok(lval_num(a->value.number));
@@ -26,23 +30,49 @@ static eval_result_t ast_atom_to_lval(const atom_t *a) {
   }
 }
 
+static eval_result_t ast_to_quoted_lval(const s_expression_t *e) {
+  if (e->type == NODE_ATOM) {
+    return ast_atom_to_quoted_lval(&e->data.atom);
+  }
+  if (e->type == NODE_LIST) {
+    if (e->data.list.count == 0 && e->data.list.tail == NULL) {
+      return eval_ok(lval_nil());
+    }
+    return ast_list_to_quoted_cons(e);
+  }
+  return eval_errf("quote: unknown node type %d", e->type);
+}
+
+static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list) {
+  lval_t *tail = NULL;
+  if (list->data.list.tail) {
+    eval_result_t tail_res = ast_to_quoted_lval(list->data.list.tail);
+    if (tail_res.status != EVAL_OK) return tail_res;
+    tail = tail_res.result;
+  } else {
+    tail = lval_nil();
+  }
+
+  for (ssize_t i = (ssize_t)list->data.list.count - 1; i >= 0; --i) {
+    const s_expression_t *elem = list->data.list.elements[i];
+    eval_result_t elem_res = ast_to_quoted_lval(elem);
+    if (elem_res.status != EVAL_OK) {
+      lval_free(tail);
+      return elem_res;
+    }
+    lval_t *acc = lval_cons(elem_res.result, tail);
+    tail = acc;
+  }
+  return eval_ok(tail);
+}
+
 static eval_result_t sf_quote(s_expression_t *list, env_t *env) {
   (void)env;
   if (list->data.list.count != 2) {
     return eval_errf("quote requires exactly one argument, got %zu", list->data.list.count - 1);
   }
-  s_expression_t *arg = list->data.list.elements[1];
-  if (arg->type == NODE_ATOM) {
-    return ast_atom_to_lval(&arg->data.atom);
-  }
-
-  if (arg->type == NODE_LIST) {
-    if (arg->data.list.count == 0 && arg->data.list.tail == NULL) {
-      return eval_ok(lval_nil());
-    }
-    return eval_errf("quote: non-empty lists not supported yet");
-  }
-  return eval_errf("quote: expected atom or empty list");
+  const s_expression_t *arg = list->data.list.elements[1];
+  return ast_to_quoted_lval(arg);
 }
 
 // Lookups
