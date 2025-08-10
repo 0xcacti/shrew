@@ -16,9 +16,20 @@ it's always good to write a lisp when learning a new language.
 - [ ] Implement evaluator 
     - [x] Implement symbol interning 
     - [x] Implement lvals 
-    - [ ] Implement env 
-    - [ ] Implement atom evaluation 
-    - [ ] Implement list evaluation 
+    - [x] Implement env 
+    - [x] Implement atom evaluation 
+    - [x] Implement list evaluation 
+    - [ ] Implement special forms
+        - [x] quote family
+            - [x] quote
+            - [ ] quasiquote
+            - [ ] unquote
+            - [ ] unquote-splicing
+        - [ ] if
+        - [ ] define
+        - [ ] lambda
+        - [ ] begin
+
     - [ ] Implement built-in functions
 - [ ] Implement CLI tool
     - [ ] Repl 
