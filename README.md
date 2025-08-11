@@ -37,6 +37,3 @@ it's always good to write a lisp when learning a new language.
 - [ ] Decide on memory management strategy, 
     - free all tokens, lexer, etc at the end
     - free parser and have it free lexer and have it free tokens
-
-
-# Returning to this project momentarily
