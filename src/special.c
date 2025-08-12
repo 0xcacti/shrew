@@ -9,7 +9,6 @@
 #include "special.h"
 
 // forward declarations
-//
 static eval_result_t ast_to_quoted_lval(const s_expression_t *e);
 static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list);
 
@@ -75,6 +74,14 @@ static eval_result_t sf_quote(s_expression_t *list, env_t *env) {
   return ast_to_quoted_lval(arg);
 }
 
+static eval_result_t sf_unquote(s_expression_t *list, env_t *env) {
+  (void)env;
+  if (list->data.list.count != 2) {
+    return eval_errf("unquote requires exactly one argument, got %zu", list->data.list.count - 1);
+  }
+  const eval_result_t arg_res =
+}
+
 // Lookups
 typedef struct {
   const char *name;
@@ -82,7 +89,7 @@ typedef struct {
 } special_entry_t;
 
 static const special_entry_t k_specials[] = {
-  { "quote", sf_quote },
+  { "quote", sf_quote }, { "unquote", sf_unquote },
   // {"if",     sf_if},
   // {"define", sf_define},
   // {"begin",  sf_begin},
