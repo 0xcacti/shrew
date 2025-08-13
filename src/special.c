@@ -9,8 +9,8 @@
 #include "special.h"
 
 // forward declarations
-static eval_result_t ast_to_quoted_lval(const s_expression_t *e);
-static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list);
+static eval_result_t ast_to_quoted_lval(const s_expression_t *e, env_t *env);
+static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list, env_t *env);
 
 static eval_result_t ast_atom_to_quoted_lval(const atom_t *a) {
   switch (a->type) {
@@ -29,7 +29,7 @@ static eval_result_t ast_atom_to_quoted_lval(const atom_t *a) {
   }
 }
 
-static eval_result_t ast_to_quoted_lval(const s_expression_t *e) {
+static eval_result_t ast_to_quoted_lval(const s_expression_t *e, env_t *env) {
   if (e->type == NODE_ATOM) {
     return ast_atom_to_quoted_lval(&e->data.atom);
   }
@@ -37,15 +37,15 @@ static eval_result_t ast_to_quoted_lval(const s_expression_t *e) {
     if (e->data.list.count == 0 && e->data.list.tail == NULL) {
       return eval_ok(lval_nil());
     }
-    return ast_list_to_quoted_cons(e);
+    return ast_list_to_quoted_cons(e, env);
   }
   return eval_errf("quote: unknown node type %d", e->type);
 }
 
-static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list) {
+static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list, env_t *env) {
   lval_t *tail = NULL;
   if (list->data.list.tail) {
-    eval_result_t tail_res = ast_to_quoted_lval(list->data.list.tail);
+    eval_result_t tail_res = ast_to_quoted_lval(list->data.list.tail, env);
     if (tail_res.status != EVAL_OK) return tail_res;
     tail = tail_res.result;
   } else {
@@ -54,7 +54,7 @@ static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list) {
 
   for (ssize_t i = (ssize_t)list->data.list.count - 1; i >= 0; --i) {
     const s_expression_t *elem = list->data.list.elements[i];
-    eval_result_t elem_res = ast_to_quoted_lval(elem);
+    eval_result_t elem_res = ast_to_quoted_lval(elem, env);
     if (elem_res.status != EVAL_OK) {
       lval_free(tail);
       return elem_res;
@@ -71,16 +71,17 @@ static eval_result_t sf_quote(s_expression_t *list, env_t *env) {
     return eval_errf("quote requires exactly one argument, got %zu", list->data.list.count - 1);
   }
   const s_expression_t *arg = list->data.list.elements[1];
-  return ast_to_quoted_lval(arg);
+  return ast_to_quoted_lval(arg, env);
 }
 
-static eval_result_t sf_unquote(s_expression_t *list, env_t *env) {
-  (void)env;
-  if (list->data.list.count != 2) {
-    return eval_errf("unquote requires exactly one argument, got %zu", list->data.list.count - 1);
-  }
-  const eval_result_t arg_res =
-}
+// static eval_result_t sf_unquote(s_expression_t *list, env_t *env) {
+//   (void)env;
+//   if (list->data.list.count != 2) {
+//     return eval_errf("unquote requires exactly one argument, got %zu", list->data.list.count -
+//     1);
+//   }
+//   const eval_result_t arg_res =
+// }
 
 // Lookups
 typedef struct {
@@ -89,7 +90,8 @@ typedef struct {
 } special_entry_t;
 
 static const special_entry_t k_specials[] = {
-  { "quote", sf_quote }, { "unquote", sf_unquote },
+  { "quote", sf_quote },
+  // { "unquote", sf_unquote },
   // {"if",     sf_if},
   // {"define", sf_define},
   // {"begin",  sf_begin},
