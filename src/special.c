@@ -37,6 +37,13 @@ static eval_result_t ast_to_quoted_lval(const s_expression_t *e, env_t *env) {
     if (e->data.list.count == 0 && e->data.list.tail == NULL) {
       return eval_ok(lval_nil());
     }
+    if (e->data.list.tail == NULL && e->data.list.count == 2) {
+      const s_expression_t *head = e->data.list.elements[0];
+      if (head->type == NODE_ATOM && head->data.atom.type == ATOM_SYMBOL &&
+          strcmp(head->data.atom.value.symbol, "unquote") == 0) {
+        return evaluate_single(e->data.list.elements[1], env);
+      }
+    }
     return ast_list_to_quoted_cons(e, env);
   }
   return eval_errf("quote: unknown node type %d", e->type);
@@ -66,7 +73,6 @@ static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list, env_t *
 }
 
 static eval_result_t sf_quote(s_expression_t *list, env_t *env) {
-  (void)env;
   if (list->data.list.count != 2) {
     return eval_errf("quote requires exactly one argument, got %zu", list->data.list.count - 1);
   }
@@ -74,14 +80,11 @@ static eval_result_t sf_quote(s_expression_t *list, env_t *env) {
   return ast_to_quoted_lval(arg, env);
 }
 
-// static eval_result_t sf_unquote(s_expression_t *list, env_t *env) {
-//   (void)env;
-//   if (list->data.list.count != 2) {
-//     return eval_errf("unquote requires exactly one argument, got %zu", list->data.list.count -
-//     1);
-//   }
-//   const eval_result_t arg_res =
-// }
+static eval_result_t sf_unquote(s_expression_t *list, env_t *env) {
+  (void)env;
+  (void)list;
+  return eval_errf("unquote is only valid inside a quote form");
+}
 
 // Lookups
 typedef struct {
@@ -89,14 +92,16 @@ typedef struct {
   special_form_fn fn;
 } special_entry_t;
 
+// clang-format off
 static const special_entry_t k_specials[] = {
-  { "quote", sf_quote },
-  // { "unquote", sf_unquote },
+  { "quote", sf_quote }, 
+  { "unquote", sf_unquote },
   // {"if",     sf_if},
   // {"define", sf_define},
   // {"begin",  sf_begin},
   // {"lambda", sf_lambda},
 };
+// clang-format on
 
 special_form_fn lookup_special_form(const char *name) {
   for (size_t i = 0; i < sizeof k_specials / sizeof k_specials[0]; i++) {
