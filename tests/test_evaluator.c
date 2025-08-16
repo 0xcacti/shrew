@@ -628,7 +628,7 @@ Test(quote_tests, quote_unquote_in_dotted_tail) {
   cr_assert(env_init(&env, NULL));
 
   parser_t p = { 0 };
-  parse_result_t pr = setup_input("'(1 2 . ,3)", &p);
+  parse_result_t pr = setup_input("'(1 2 . (unquote 3))", &p);
 
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
   cr_assert_eq(r.status, EVAL_OK);
@@ -658,7 +658,7 @@ Test(quote_tests, unquote_top_level_errors) {
   cr_assert(env_init(&env, NULL));
 
   parser_t p = { 0 };
-  parse_result_t pr = setup_input(",1", &p);
+  parse_result_t pr = setup_input("(unquote 1)", &p);
 
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
   cr_assert_eq(r.status, EVAL_ERR);
