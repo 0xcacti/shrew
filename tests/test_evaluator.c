@@ -670,3 +670,21 @@ Test(quote_tests, unquote_top_level_errors) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(add_tests, it_add_two_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(+ 1 2)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert(is_num(r.result, 3.0));
+  lval_free(r.result);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}

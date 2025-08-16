@@ -1,4 +1,5 @@
 #include "evaluator.h"
+#include "builtin.h"
 #include "env.h"
 #include "lval.h"
 #include "parser.h"
@@ -90,7 +91,26 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
     const char *head_name = NULL;
     if (sexp_is_symbol(head, &head_name)) {
       special_form_fn sf = lookup_special_form(head_name);
-      if (sf) return sf(expr, env);
+      builtin_fn bf = lookup_builtin(head_name);
+      if (sf) {
+        return sf(expr, env);
+      } else if (bf) {
+
+        size_t argc = expr->data.list.count - 1;
+        lval_t **argv = malloc(argc * sizeof(lval_t *));
+        if (!argv) {
+          return eval_errf("Memory allocation failed for function arguments.");
+        }
+        for (size_t i = 0; i < argc; i++) {
+          eval_result_t res = evaluate_single(expr->data.list.elements[i + 1], env);
+          if (res.status != EVAL_OK) {
+            free(argv);
+            return res;
+          }
+          argv[i] = res.result;
+        }
+        return bf(argc, argv, env);
+      }
     }
     return eval_errf("Unknown function: %s", head_name ? head_name : "unknown");
 
