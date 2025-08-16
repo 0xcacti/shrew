@@ -8,7 +8,7 @@
 #include <math.h>
 #include <stdbool.h>
 
-parse_result_t setup_input(const char *input, parser_t *out_parser) {
+static parse_result_t setup_input(const char *input, parser_t *out_parser) {
   lexer_t lexer = lexer_new(input);
   *out_parser = parser_new(&lexer);
   parse_result_t result = parser_parse(out_parser);

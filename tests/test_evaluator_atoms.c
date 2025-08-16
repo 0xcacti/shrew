@@ -17,21 +17,6 @@ static parse_result_t setup_input(const char *input, parser_t *out_parser) {
   return result;
 }
 
-static bool is_num(const lval_t *v, double x) {
-  return v && v->type == L_NUM && fabs(v->as.number - x) < 1e-9;
-}
-static lval_t *car(lval_t *c) {
-  cr_assert_eq(c->type, L_CONS);
-  return c->as.cons.car;
-}
-static lval_t *cdr(lval_t *c) {
-  cr_assert_eq(c->type, L_CONS);
-  return c->as.cons.cdr;
-}
-static void require_cons(const lval_t *v) {
-  cr_assert_eq(v->type, L_CONS);
-}
-
 Test(evaluator_tests, evaluate_number_atom) {
   symbol_intern_init();
 
