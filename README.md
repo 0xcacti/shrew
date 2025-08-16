@@ -29,8 +29,72 @@ it's always good to write a lisp when learning a new language.
         - [ ] define
         - [ ] lambda
         - [ ] begin
+        - [ ] cond
+        - [ ] defmacro 
+    - [ ] Implement builtins
+        - [ ] Arithmetic
+            - [ ] +
+            - [ ] -
+            - [ ] *
+            - [ ] /
+            - [ ] mod 
+            - [ ] abs
+            - [ ] min
+            - [ ] max
+            - [ ] floor
+            - [ ] ceil
+            - [ ] round
+            - [ ] trunc
+            - [ ] sqrt 
+            - [ ] exp
+        - [ ] Comparison and equality
+            - [ ] =
+            - [ ] <
+            - [ ] <=
+            - [ ] >
+            - [ ] >=
+            - [ ] eq?     *(identity)*
+            - [ ] equal?  *(deep)*
+        - [ ] Booleans 
+            - [ ] not
+        - [ ] Lists / pairs 
+            - [ ] cons 
+            - [ ] car
+            - [ ] cdr
+            - [ ] list
+            - [ ] length
+            - [ ] null
+            - [ ] append
+            - [ ] pair 
+            - [ ] reverse
+        - [ ] Type predicates
+            - [ ] number?
+            - [ ] symbol?
+            - [ ] string?
+            - [ ] list?
+            - [ ] pair?
+            - [ ] function?
+        - [ ] Strings and conversion 
+            - [ ] string-length
+            - [ ] string-append
+            - [ ] number->string
+            - [ ] string->number
+            - [ ] number->string
+            - [ ] symbol->string
+            - [ ] string->symbol
+        - [ ] Functional 
+            - [ ] apply
+            - [ ] error
+            - [ ] print
+            - [ ] newline
+            - [ ] map
+            - [ ] filter
+            - [ ] reduce
+            - [ ] fold
+            - [ ] gensym
+            - [ ] eval
+            - [ ] load
 
-    - [ ] Implement built-in functions
 - [ ] Implement CLI tool
     - [ ] Repl 
     - [ ] File execution 

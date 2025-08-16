@@ -1,4 +1,5 @@
 #include "builtin.h"
+#include <math.h>
 #include <string.h>
 
 static eval_result_t builtin_add(size_t argc, lval_t **argv, env_t *env) {
@@ -58,6 +59,21 @@ static eval_result_t builtin_div(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_num(s));
 }
 
+static eval_result_t builtin_mod(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 2) {
+    return eval_errf("mod: expected exactly 2 arguments, got %zu", argc);
+  }
+  if (argv[0]->type != L_NUM || argv[1]->type != L_NUM) {
+    return eval_errf("mod: expected both arguments to be numbers");
+  }
+  if (argv[1]->as.number == 0.0) {
+    return eval_errf("mod: division by zero");
+  }
+  double result = fmod(argv[0]->as.number, argv[1]->as.number);
+  return eval_ok(lval_num(result));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -69,6 +85,7 @@ static const builtin_entry_t k_builtins[] = {
   { "-", builtin_sub },
   { "*", builtin_mul },
   { "/", builtin_div },
+  { "mod", builtin_mod },
   // { "=", builtin_eq },
   // { "<", builtin_lt },
   // { ">", builtin_gt },
