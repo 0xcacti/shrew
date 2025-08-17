@@ -442,6 +442,128 @@ static eval_result_t builtin_or(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_bool(false));
 }
 
+static eval_result_t builtin_cons(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 2) {
+    return eval_errf("cons: expected exactly 2 arguments, got %zu", argc);
+  }
+  lval_t *cons_cell = lval_cons(argv[0], argv[1]);
+  return eval_ok(cons_cell);
+}
+
+static eval_result_t builtin_car(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("car: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_CONS) {
+    return eval_errf("car: expected a cons cell");
+  }
+  if (argv[0]->as.cons.car == NULL) {
+    return eval_errf("car: cons cell is empty");
+  }
+  lval_t *car_value = argv[0]->as.cons.car;
+  return eval_ok(lval_copy(car_value));
+}
+
+static eval_result_t builtin_cdr(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("cdr: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_CONS) {
+    return eval_errf("cdr: expected a cons cell");
+  }
+  if (argv[0]->as.cons.cdr == NULL) {
+    return eval_errf("cdr: cons cell is empty");
+  }
+  lval_t *cdr_value = argv[0]->as.cons.cdr;
+  return eval_ok(lval_copy(cdr_value));
+}
+
+static eval_result_t builtin_list(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc == 0) {
+    return eval_ok(lval_nil());
+  }
+
+  lval_t *list = lval_nil();
+  for (size_t i = argc; i > 0; i--) {
+    lval_t *item = lval_copy(argv[i - 1]);
+    list = lval_cons(item, list);
+  }
+  return eval_ok(list);
+}
+
+static eval_result_t builtin_length(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("length: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type == L_NIL) {
+    return eval_ok(lval_num(0.0)); // Length of nil is 0
+  }
+
+  if (argv[0]->type != L_CONS) {
+    return eval_errf("length: expected a cons cell");
+  }
+  size_t length = 0;
+  lval_t *current = argv[0];
+  while (current->type == L_CONS) {
+    length++;
+    current = current->as.cons.cdr;
+    if (current == NULL) break; // Reached the end of the list
+  }
+
+  return eval_ok(lval_num((double)length));
+}
+
+static eval_result_t builtin_append(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc < 2) {
+    return eval_errf("append: expected at least 2 arguments, got %zu", argc);
+  }
+
+  lval_t *result = lval_nil();
+  for (size_t i = argc; i > 0; i--) {
+    lval_t *item = lval_copy(argv[i - 1]);
+    result = lval_cons(item, result);
+  }
+
+  lval_t *reversed = lval_nil();
+  while (result->type == L_CONS) {
+    reversed = lval_cons(result->as.cons.car, reversed);
+    result = result->as.cons.cdr;
+  }
+
+  return eval_ok(reversed);
+}
+
+static eval_result_t builtin_reverse(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("reverse: expected exactly 1 argument, got %zu", argc);
+  }
+
+  if (argv[0]->type == L_NIL) {
+    return eval_ok(lval_nil());
+  }
+
+  if (argv[0]->type != L_CONS) {
+    return eval_errf("reverse: expected a cons cell");
+  }
+
+  lval_t *result = lval_nil();
+  lval_t *current = argv[0];
+  while (current->type == L_CONS) {
+    result = lval_cons(current->as.cons.car, result);
+    current = current->as.cons.cdr;
+    if (current == NULL) break;
+  }
+
+  return eval_ok(result);
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -477,6 +599,23 @@ static const builtin_entry_t k_builtins[] = {
   { "not", builtin_not },
   { "and", builtin_and },
   { "or", builtin_or },
+  // lists
+  { "cons", builtin_cons },
+  { "car", builtin_car },
+  { "cdr", builtin_cdr },
+  { "list", builtin_list },
+  { "length", builtin_length },
+  { "append", builtin_append },
+  { "reverse", builtin_reverse },
+  // type checking
+  // { "null?", builtin_null },
+  // { "pair?", builtin_pair },
+  // { "atom?", builtin_atom },
+  // { "list?", builtin_list },
+  // { "number?", builtin_number },
+  // { "symbol?", builtin_symbol },
+  // { "string?", builtin_string },
+  // { "function?", builtin_function },
 };
 // clang-format on
 

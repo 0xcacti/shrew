@@ -56,26 +56,27 @@ it's always good to write a lisp when learning a new language.
             - [x] >=
             - [x] eq?     *(identity)*
             - [x] equal?  *(deep)*
-        - [ ] Booleans 
-            - [ ] not
-            - [ ] and 
-            - [ ] or
+        - [x] Booleans 
+            - [x] not
+            - [x] and 
+            - [x] or
         - [ ] Lists / pairs 
             - [ ] cons 
             - [ ] car
             - [ ] cdr
             - [ ] list
             - [ ] length
-            - [ ] null
             - [ ] append
-            - [ ] pair 
             - [ ] reverse
         - [ ] Type predicates
+            - [ ] atom?
+            - [ ] list?
+            - [ ] null?
             - [ ] number?
             - [ ] symbol?
             - [ ] string?
             - [ ] list?
-            - [ ] pair?
+            - [x] pair?
             - [ ] function?
         - [ ] Strings and conversion 
             - [ ] string-length
@@ -101,6 +102,7 @@ it's always good to write a lisp when learning a new language.
 - [ ] Implement CLI tool
     - [ ] Repl 
     - [ ] File execution 
+
 - [ ] Decide on memory management strategy, 
     - free all tokens, lexer, etc at the end
     - free parser and have it free lexer and have it free tokens
