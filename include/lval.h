@@ -10,7 +10,7 @@ typedef enum {
   L_STRING,
   L_SYMBOL,
   L_CONS,
-  // add more here later
+  L_FUNCTION,
 } ltype_t;
 
 typedef struct lval {
@@ -22,6 +22,12 @@ typedef struct lval {
     struct { char *ptr; size_t len; } string;
     struct { const char *name; } symbol;
     struct { struct lval *car; struct lval *cdr; } cons;
+    struct {
+      char **params;
+      size_t param_count;
+      struct lval *body;
+      struct env *closure;
+    } function;
   } as;
 } lval_t;
 
@@ -33,6 +39,8 @@ lval_t *lval_string_copy(const char *s, size_t len);
 lval_t *lval_intern(const char *name);
 lval_t *lval_nil(void);
 lval_t *lval_cons(lval_t *car, lval_t *cdr);
+lval_t *lval_function(char **params, size_t param_count, lval_t *body, struct env *closure);
+
 const char *lval_type_name(const lval_t *v);
 void lval_print(const lval_t *v);
 void lval_free(lval_t *v);

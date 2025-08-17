@@ -72,6 +72,20 @@ lval_t *lval_nil(void) {
   return v;
 }
 
+lval_t *lval_function(char **params, size_t param_count, lval_t *body, struct env *closure) {
+  lval_t *v = malloc(sizeof(lval_t));
+  if (!v) return NULL;
+  v->mark = 0;
+  v->type = L_FUNCTION;
+
+  v->as.function.params = params;
+  v->as.function.param_count = param_count;
+  v->as.function.body = body;
+  v->as.function.closure = closure;
+
+  return v;
+}
+
 const char *lval_type_name(const lval_t *v) {
   switch (v->type) {
   case L_NUM:
@@ -84,6 +98,10 @@ const char *lval_type_name(const lval_t *v) {
     return "symbol";
   case L_NIL:
     return "nil";
+  case L_CONS:
+    return "cons";
+  case L_FUNCTION:
+    return "function";
   default:
     return "unknown";
   }
@@ -105,6 +123,22 @@ void lval_print(const lval_t *v) {
     break;
   case L_NIL:
     printf("nil");
+    break;
+  case L_CONS:
+    printf("(");
+    if (v->as.cons.car) {
+      lval_print(v->as.cons.car);
+    } else {
+      printf("nil");
+    }
+    if (v->as.cons.cdr) {
+      printf(" . ");
+      lval_print(v->as.cons.cdr);
+    }
+    printf(")");
+    break;
+  case L_FUNCTION:
+    printf("<function>");
     break;
   default:
     printf("<unknown>");
@@ -161,6 +195,43 @@ lval_t *lval_copy(const lval_t *v) {
     copy->as.cons.cdr = lval_copy(v->as.cons.cdr);
     break;
 
+  case L_FUNCTION:
+    copy->as.function.param_count = v->as.function.param_count;
+    if (v->as.function.param_count > 0) {
+      copy->as.function.params = malloc(v->as.function.param_count * sizeof(char *));
+      if (!copy->as.function.params) {
+        perror("malloc");
+        free(copy);
+        exit(EXIT_FAILURE);
+      }
+      for (size_t i = 0; i < v->as.function.param_count; i++) {
+        copy->as.function.params[i] = strdup(v->as.function.params[i]);
+        if (!copy->as.function.params[i]) {
+          perror("strdup");
+          for (size_t j = 0; j < i; j++) {
+            free(copy->as.function.params[j]);
+          }
+          free(copy->as.function.params);
+          free(copy);
+          exit(EXIT_FAILURE);
+        }
+      }
+    } else {
+      copy->as.function.params = NULL;
+    }
+
+    copy->as.function.body = lval_copy(v->as.function.body);
+    if (!copy->as.function.body) {
+      for (size_t i = 0; i < copy->as.function.param_count; i++) {
+        free(copy->as.function.params[i]);
+      }
+      free(copy->as.function.params);
+      free(copy);
+      exit(EXIT_FAILURE);
+    }
+
+    copy->as.function.closure = v->as.function.closure;
+    break;
   default:
     fprintf(stderr, "lval_copy: unsupported type %d\n", (int)v->type);
     free(copy);
@@ -179,6 +250,13 @@ void lval_free(lval_t *v) {
   case L_CONS:
     lval_free(v->as.cons.car);
     lval_free(v->as.cons.cdr);
+    break;
+  case L_FUNCTION:
+    for (size_t i = 0; i < v->as.function.param_count; i++) {
+      free(v->as.function.params[i]);
+    }
+    free(v->as.function.params);
+    lval_free(v->as.function.body);
     break;
   case L_SYMBOL:
   case L_NIL:

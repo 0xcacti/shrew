@@ -107,6 +107,52 @@ static void redirect_stdout(void) {
   cr_redirect_stdout();
 }
 
+Test(lval_tests, it_creates_function) {
+  symbol_intern_init();
+
+  char **params = malloc(2 * sizeof(char *));
+  params[0] = strdup("x");
+  params[1] = strdup("y");
+
+  lval_t *body = lval_intern("body_expr");
+
+  lval_t *func = lval_function(params, 2, body, NULL);
+
+  cr_assert_not_null(func, "function lval should not be NULL");
+  cr_assert_eq(func->type, L_FUNCTION, "lval type should be L_FUNCTION");
+  cr_assert_eq(func->as.function.param_count, 2, "should have 2 parameters");
+  cr_assert_str_eq(func->as.function.params[0], "x", "first param should be 'x'");
+  cr_assert_str_eq(func->as.function.params[1], "y", "second param should be 'y'");
+  cr_assert_not_null(func->as.function.body, "function body should not be NULL");
+  cr_assert_eq(func->as.function.body->type, L_SYMBOL, "body should be a symbol");
+
+  lval_free(func);
+  symbol_intern_free_all();
+}
+
+Test(lval_tests, function_copy_works) {
+  symbol_intern_init();
+
+  char **params = malloc(1 * sizeof(char *));
+  params[0] = strdup("x");
+  lval_t *body = lval_num(42);
+  lval_t *original = lval_function(params, 1, body, NULL);
+
+  lval_t *copy = lval_copy(original);
+
+  cr_assert_not_null(copy, "copied function should not be NULL");
+  cr_assert_eq(copy->type, L_FUNCTION, "copy should be L_FUNCTION");
+  cr_assert_eq(copy->as.function.param_count, 1, "copy should have 1 parameter");
+  cr_assert_str_eq(copy->as.function.params[0], "x", "copy param should be 'x'");
+  cr_assert_neq(copy->as.function.params,
+                original->as.function.params,
+                "param arrays should be different pointers");
+
+  lval_free(original);
+  lval_free(copy);
+  symbol_intern_free_all();
+}
+
 Test(lval_tests, prints_all_atoms, .init = redirect_stdout) {
   symbol_intern_init();
 
@@ -145,6 +191,66 @@ Test(lval_tests, prints_all_atoms, .init = redirect_stdout) {
   lval_free(v_nil);
   lval_free(v_true);
   lval_free(v_false);
+
+  symbol_intern_free_all();
+}
+
+Test(lval_tests, prints_function, .init = redirect_stdout) {
+  symbol_intern_init();
+
+  char **params = malloc(1 * sizeof(char *));
+  params[0] = strdup("x");
+  lval_t *body = lval_num(42);
+  lval_t *func = lval_function(params, 1, body, NULL);
+
+  lval_print(func);
+  putchar('\n');
+  fflush(stdout);
+
+  cr_assert_stdout_eq_str("<function>\n");
+
+  lval_free(func);
+  symbol_intern_free_all();
+}
+
+Test(lval_tests, it_prints_lists, .init = redirect_stdout) {
+  symbol_intern_init();
+
+  lval_t *pair = lval_cons(lval_num(1), lval_num(2));
+
+  lval_t *list = lval_cons(lval_num(1), lval_cons(lval_num(2), lval_cons(lval_num(3), lval_nil())));
+
+  lval_t *single = lval_cons(lval_intern("hello"), lval_nil());
+
+  lval_t *mixed = lval_cons(
+      lval_num(42), lval_cons(lval_string_copy("test", 4), lval_cons(lval_bool(true), lval_nil())));
+
+  lval_t *empty = lval_nil();
+
+  lval_print(pair);
+  putchar('\n');
+  lval_print(list);
+  putchar('\n');
+  lval_print(single);
+  putchar('\n');
+  lval_print(mixed);
+  putchar('\n');
+  lval_print(empty);
+  putchar('\n');
+
+  fflush(stdout);
+
+  cr_assert_stdout_eq_str("(1 . 2)\n"
+                          "(1 . (2 . (3 . nil)))\n"
+                          "(hello . nil)\n"
+                          "(42 . (\"test\" . (true . nil)))\n"
+                          "nil\n");
+
+  lval_free(pair);
+  lval_free(list);
+  lval_free(single);
+  lval_free(mixed);
+  lval_free(empty);
 
   symbol_intern_free_all();
 }

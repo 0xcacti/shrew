@@ -60,22 +60,22 @@ it's always good to write a lisp when learning a new language.
             - [x] not
             - [x] and 
             - [x] or
-        - [ ] Lists / pairs 
-            - [ ] cons 
-            - [ ] car
-            - [ ] cdr
-            - [ ] list
-            - [ ] length
-            - [ ] append
-            - [ ] reverse
+        - [x] Lists / pairs 
+            - [x] cons 
+            - [x] car
+            - [x] cdr
+            - [x] list
+            - [x] length
+            - [x] append
+            - [x] reverse
         - [ ] Type predicates
-            - [ ] atom?
-            - [ ] list?
-            - [ ] null?
-            - [ ] number?
-            - [ ] symbol?
-            - [ ] string?
-            - [ ] list?
+            - [x] atom?
+            - [x] list?
+            - [x] null?
+            - [x] number?
+            - [x] symbol?
+            - [x] string?
+            - [x] list?
             - [x] pair?
             - [ ] function?
         - [ ] Strings and conversion 

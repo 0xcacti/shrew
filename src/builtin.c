@@ -564,6 +564,85 @@ static eval_result_t builtin_reverse(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(result);
 }
 
+static eval_result_t builtin_is_null(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("null?: expected exactly 1 argument, got %zu", argc);
+  }
+  return eval_ok(lval_bool(argv[0]->type == L_NIL));
+}
+
+static eval_result_t builtin_is_pair(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("pair?: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_CONS) {
+    return eval_ok(lval_bool(false));
+  }
+  return eval_ok(lval_bool(argv[0]->as.cons.car != NULL || argv[0]->as.cons.cdr != NULL));
+}
+
+static eval_result_t builtin_is_atom(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("atom?: expected exactly 1 argument, got %zu", argc);
+  }
+  return eval_ok(lval_bool(argv[0]->type != L_CONS && argv[0]->type != L_NIL));
+}
+
+static eval_result_t builtin_is_number(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("number?: expected exactly 1 argument, got %zu", argc);
+  }
+  return eval_ok(lval_bool(argv[0]->type == L_NUM));
+}
+
+static eval_result_t builtin_is_symbol(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("symbol?: expected exactly 1 argument, got %zu", argc);
+  }
+  return eval_ok(lval_bool(argv[0]->type == L_SYMBOL));
+}
+
+static eval_result_t builtin_is_string(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("string?: expected exactly 1 argument, got %zu", argc);
+  }
+  return eval_ok(lval_bool(argv[0]->type == L_STRING));
+}
+
+static eval_result_t builtin_is_function(size_t argc, lval_t **argv, env_t *env) {
+  if (argc != 1) {
+    return eval_errf("function?: expected exactly 1 argument, got %zu", argc);
+  }
+
+  bool is_function = false;
+
+  if (argv[0]->type == L_SYMBOL) {
+    // Check if it's a builtin function
+    builtin_fn fn = lookup_builtin(argv[0]->as.symbol.name);
+    is_function = (fn != NULL);
+    if (!is_function) {
+      lval_t *binding = env_get_ref(env, argv[0]->as.symbol.name);
+      is_function = (binding != NULL && binding->type == L_FUNCTION);
+    }
+  }
+
+  return eval_ok(lval_bool(is_function));
+}
+
+static eval_result_t builtin_is_list(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("list?: expected exactly 1 argument, got %zu", argc);
+  }
+  return eval_ok(lval_bool(argv[0]->type == L_CONS || argv[0]->type == L_NIL));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -608,14 +687,15 @@ static const builtin_entry_t k_builtins[] = {
   { "append", builtin_append },
   { "reverse", builtin_reverse },
   // type checking
-  // { "null?", builtin_null },
-  // { "pair?", builtin_pair },
-  // { "atom?", builtin_atom },
-  // { "list?", builtin_list },
-  // { "number?", builtin_number },
-  // { "symbol?", builtin_symbol },
-  // { "string?", builtin_string },
-  // { "function?", builtin_function },
+  { "null?", builtin_is_null },
+  { "pair?", builtin_is_pair },
+  { "atom?", builtin_is_atom },
+  { "list?", builtin_is_list },
+  { "number?", builtin_is_number },
+  { "symbol?", builtin_is_symbol },
+  { "string?", builtin_is_string },
+  { "function?", builtin_is_function },
+  // casting 
 };
 // clang-format on
 
