@@ -74,6 +74,18 @@ static eval_result_t builtin_mod(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_num(result));
 }
 
+static eval_result_t builtin_abs(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("abs: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_NUM) {
+    return eval_errf("abs: expected a number argument");
+  }
+  double result = fabs(argv[0]->as.number);
+  return eval_ok(lval_num(result));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -86,6 +98,7 @@ static const builtin_entry_t k_builtins[] = {
   { "*", builtin_mul },
   { "/", builtin_div },
   { "mod", builtin_mod },
+  { "abs", builtin_abs },
   // { "=", builtin_eq },
   // { "<", builtin_lt },
   // { ">", builtin_gt },
