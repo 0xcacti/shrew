@@ -1176,3 +1176,345 @@ Test(math_tests, sqrt_non_number) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+// Equality tests
+Test(comparison_tests, eq_two_equal_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(= 5 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, eq_two_unequal_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(= 5 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, eq_multiple_equal_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(= 3 3 3 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, eq_multiple_with_one_different) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(= 3 3 5 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, eq_one_arg_error) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(= 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, eq_non_number_error) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(= 5 #t)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+// Less than tests
+Test(comparison_tests, lt_two_ascending) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(< 3 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, lt_two_descending) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(< 5 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, lt_multiple_ascending) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(< 1 2 3 4)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, lt_multiple_with_equal) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(< 1 2 2 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, lt_one_arg_error) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(< 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+// Greater than tests
+Test(comparison_tests, gt_two_descending) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(> 5 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, gt_multiple_descending) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(> 5 4 3 1)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, gt_multiple_not_monotonic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(> 5 3 4 1)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+// Less than or equal tests
+Test(comparison_tests, le_equal_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(<= 3 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, le_ascending_with_equal) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(<= 1 2 2 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, le_violates_order) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(<= 3 2)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+// Greater than or equal tests
+Test(comparison_tests, ge_equal_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(>= 5 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, ge_descending_with_equal) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(>= 5 4 4 2)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(comparison_tests, ge_violates_order) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(>= 2 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}

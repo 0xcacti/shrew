@@ -45,9 +45,9 @@ it's always good to write a lisp when learning a new language.
             - [x] ceil
             - [x] round
             - [x] trunc
-            - [ ] sqrt 
-            - [ ] exp
-            - [ ] log
+            - [x] sqrt 
+            - [x] exp
+            - [x] log
         - [ ] Comparison and equality
             - [ ] =
             - [ ] <

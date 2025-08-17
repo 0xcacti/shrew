@@ -213,6 +213,100 @@ static eval_result_t builtin_log(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_num(result));
 }
 
+static eval_result_t builtin_eq(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc < 2) {
+    return eval_errf("=: expected at least 2 arguments, got %zu", argc);
+  }
+
+  lval_t *first = argv[0];
+  if (first->type != L_NUM) {
+    return eval_errf("=: expected number at arg 1");
+  }
+  for (size_t i = 1; i < argc; i++) {
+    lval_t *arg = argv[i];
+    if (arg->type != L_NUM) {
+      return eval_errf("=: expected number at arg %zu", i + 1);
+    }
+    if (arg->as.number != first->as.number) {
+      return eval_ok(lval_bool(false));
+    }
+  }
+  return eval_ok(lval_bool(true));
+}
+
+static eval_result_t builtin_lt(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc < 2) {
+    return eval_errf("<: expected at least 2 arguments, got %zu", argc);
+  }
+  for (size_t i = 0; i < argc; i++) {
+    if (argv[i]->type != L_NUM) {
+      return eval_errf("<: expected number arguments");
+    }
+  }
+  for (size_t i = 0; i < argc - 1; i++) {
+    if (!(argv[i]->as.number < argv[i + 1]->as.number)) {
+      return eval_ok(lval_bool(false));
+    }
+  }
+  return eval_ok(lval_bool(true));
+}
+
+static eval_result_t builtin_gt(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc < 2) {
+    return eval_errf(">: expected at least 2 arguments, got %zu", argc);
+  }
+  for (size_t i = 0; i < argc; i++) {
+    if (argv[i]->type != L_NUM) {
+      return eval_errf(">: expected number arguments");
+    }
+  }
+  for (size_t i = 0; i < argc - 1; i++) {
+    if (!(argv[i]->as.number > argv[i + 1]->as.number)) {
+      return eval_ok(lval_bool(false));
+    }
+  }
+  return eval_ok(lval_bool(true));
+}
+
+static eval_result_t builtin_le(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc < 2) {
+    return eval_errf("<=: expected at least 2 arguments, got %zu", argc);
+  }
+  for (size_t i = 0; i < argc; i++) {
+    if (argv[i]->type != L_NUM) {
+      return eval_errf("<=: expected number arguments");
+    }
+  }
+  for (size_t i = 0; i < argc - 1; i++) {
+    if (!(argv[i]->as.number <= argv[i + 1]->as.number)) {
+      return eval_ok(lval_bool(false));
+    }
+  }
+  return eval_ok(lval_bool(true));
+}
+
+static eval_result_t builtin_ge(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc < 2) {
+    return eval_errf(">=: expected at least 2 arguments, got %zu", argc);
+  }
+  for (size_t i = 0; i < argc; i++) {
+    if (argv[i]->type != L_NUM) {
+      return eval_errf(">=: expected number arguments");
+    }
+  }
+  for (size_t i = 0; i < argc - 1; i++) {
+    if (!(argv[i]->as.number >= argv[i + 1]->as.number)) {
+      return eval_ok(lval_bool(false));
+    }
+  }
+  return eval_ok(lval_bool(true));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -235,14 +329,14 @@ static const builtin_entry_t k_builtins[] = {
   { "sqrt", builtin_sqrt },
   { "exp", builtin_exp },
   { "log", builtin_log },
-  // { "=", builtin_eq },
-  // { "<", builtin_lt },
-  // { ">", builtin_gt },
-  // { "<=", builtin_le },
-  // { ">=", builtin_ge },
+  { "=", builtin_eq },
+  { "<", builtin_lt },
+  { ">", builtin_gt },
+  { "<=", builtin_le },
+  { ">=", builtin_ge },
 };
 // clang-format on
-//
+
 builtin_fn lookup_builtin(const char *name) {
   for (size_t i = 0; i < sizeof k_builtins / sizeof k_builtins[0]; i++) {
     if (strcmp(name, k_builtins[i].name) == 0) return k_builtins[i].fn;
