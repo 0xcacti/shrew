@@ -671,7 +671,6 @@ Test(min_max_tests, max_negative_numbers) {
   symbol_intern_free_all();
 }
 
-// Floor tests
 Test(rounding_tests, floor_positive_decimal) {
   symbol_intern_init();
   env_t env;
@@ -755,7 +754,6 @@ Test(rounding_tests, floor_non_number) {
   symbol_intern_free_all();
 }
 
-// Ceil tests
 Test(rounding_tests, ceil_positive_decimal) {
   symbol_intern_init();
   env_t env;
@@ -806,7 +804,6 @@ Test(rounding_tests, ceil_wrong_arg_count) {
   symbol_intern_free_all();
 }
 
-// Round tests
 Test(rounding_tests, round_positive_half_up) {
   symbol_intern_init();
   env_t env;
@@ -858,7 +855,6 @@ Test(rounding_tests, round_low_decimal) {
   symbol_intern_free_all();
 }
 
-// Trunc tests
 Test(rounding_tests, trunc_positive_decimal) {
   symbol_intern_init();
   env_t env;
@@ -909,7 +905,6 @@ Test(rounding_tests, trunc_non_number) {
   symbol_intern_free_all();
 }
 
-// Exp tests
 Test(math_tests, exp_zero) {
   symbol_intern_init();
   env_t env;
@@ -993,7 +988,6 @@ Test(math_tests, exp_non_number) {
   symbol_intern_free_all();
 }
 
-// Log tests
 Test(math_tests, log_one) {
   symbol_intern_init();
   env_t env;
@@ -1093,7 +1087,6 @@ Test(math_tests, log_wrong_arg_count) {
   symbol_intern_free_all();
 }
 
-// Sqrt tests
 Test(math_tests, sqrt_perfect_squares) {
   symbol_intern_init();
   env_t env;
@@ -1177,7 +1170,6 @@ Test(math_tests, sqrt_non_number) {
   symbol_intern_free_all();
 }
 
-// Equality tests
 Test(comparison_tests, eq_two_equal_numbers) {
   symbol_intern_init();
   env_t env;
@@ -1278,7 +1270,6 @@ Test(comparison_tests, eq_non_number_error) {
   symbol_intern_free_all();
 }
 
-// Less than tests
 Test(comparison_tests, lt_two_ascending) {
   symbol_intern_init();
   env_t env;
@@ -1363,7 +1354,6 @@ Test(comparison_tests, lt_one_arg_error) {
   symbol_intern_free_all();
 }
 
-// Greater than tests
 Test(comparison_tests, gt_two_descending) {
   symbol_intern_init();
   env_t env;
@@ -1415,7 +1405,6 @@ Test(comparison_tests, gt_multiple_not_monotonic) {
   symbol_intern_free_all();
 }
 
-// Less than or equal tests
 Test(comparison_tests, le_equal_numbers) {
   symbol_intern_init();
   env_t env;
@@ -1467,7 +1456,6 @@ Test(comparison_tests, le_violates_order) {
   symbol_intern_free_all();
 }
 
-// Greater than or equal tests
 Test(comparison_tests, ge_equal_numbers) {
   symbol_intern_init();
   env_t env;
@@ -1519,7 +1507,6 @@ Test(comparison_tests, ge_violates_order) {
   symbol_intern_free_all();
 }
 
-// Identity equality (eq) tests
 Test(equality_tests, eq_same_numbers) {
   symbol_intern_init();
   env_t env;
@@ -1671,7 +1658,6 @@ Test(equality_tests, eq_too_many_args) {
   symbol_intern_free_all();
 }
 
-// Deep equality (equal) tests
 Test(equality_tests, equal_same_numbers) {
   symbol_intern_init();
   env_t env;
@@ -1882,6 +1868,322 @@ Test(equality_tests, equal_wrong_arg_count) {
   cr_assert(env_init(&env, NULL));
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal 5 5 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, boolean_not_fails_on_non_boolean) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(not 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, not_true_becomes_false) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(not #t)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, not_false_becomes_true) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(not #f)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, not_wrong_arg_count) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(not #t #f)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, not_no_args_error) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(not)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, and_all_true) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(and #t #t #t)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, and_one_false) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(and #t #f #t)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, and_all_false) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(and #f #f #f)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, and_single_true) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(and #t)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, and_single_false) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(and #f)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, and_no_args_error) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(and)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, and_non_boolean_error) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(and #t 5 #f)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, or_all_false) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(or #f #f #f)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, or_one_true) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(or #f #t #f)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, or_all_true) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(or #t #t #t)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, or_single_true) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(or #t)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, or_single_false) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(or #f)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, or_no_args_error) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(or)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(boolean_tests, or_non_boolean_error) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(or #f \"hello\" #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
   cr_assert_eq(r.status, EVAL_ERR);
   cr_assert_not_null(r.error_message);

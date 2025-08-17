@@ -397,6 +397,51 @@ static eval_result_t builtin_deep_eq(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_bool(equal));
 }
 
+static eval_result_t builtin_not(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("not: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_BOOL) {
+    return eval_errf("not: expected a boolean argument");
+  }
+  bool result = !argv[0]->as.boolean;
+  return eval_ok(lval_bool(result));
+}
+
+static eval_result_t builtin_and(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc == 0) {
+    return eval_errf("and: expected at least 1 argument, got %zu", argc);
+  }
+
+  for (size_t i = 0; i < argc; i++) {
+    if (argv[i]->type != L_BOOL) {
+      return eval_errf("and: expected boolean arguments");
+    }
+    if (!argv[i]->as.boolean) {
+      return eval_ok(lval_bool(false));
+    }
+  }
+  return eval_ok(lval_bool(true));
+}
+
+static eval_result_t builtin_or(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc == 0) {
+    return eval_errf("or: expected at least 1 argument, got %zu", argc);
+  }
+  for (size_t i = 0; i < argc; i++) {
+    if (argv[i]->type != L_BOOL) {
+      return eval_errf("or: expected boolean arguments");
+    }
+    if (argv[i]->as.boolean) {
+      return eval_ok(lval_bool(true));
+    }
+  }
+  return eval_ok(lval_bool(false));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -404,6 +449,7 @@ typedef struct {
 
 // clang-format off
 static const builtin_entry_t k_builtins[] = {
+  // math
   { "+", builtin_add },
   { "-", builtin_sub },
   { "*", builtin_mul },
@@ -419,6 +465,7 @@ static const builtin_entry_t k_builtins[] = {
   { "sqrt", builtin_sqrt },
   { "exp", builtin_exp },
   { "log", builtin_log },
+  // comparison 
   { "=", builtin_eq },
   { "<", builtin_lt },
   { ">", builtin_gt },
@@ -426,6 +473,10 @@ static const builtin_entry_t k_builtins[] = {
   { ">=", builtin_ge },
   { "eq", builtin_identity_eq },
   { "equal", builtin_deep_eq },
+  // boolean
+  { "not", builtin_not },
+  { "and", builtin_and },
+  { "or", builtin_or },
 };
 // clang-format on
 

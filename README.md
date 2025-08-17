@@ -32,7 +32,7 @@ it's always good to write a lisp when learning a new language.
         - [ ] cond
         - [ ] defmacro 
     - [ ] Implement builtins
-        - [ ] Arithmetic
+        - [x] Arithmetic
             - [x] +
             - [x] -
             - [x] *
@@ -48,14 +48,14 @@ it's always good to write a lisp when learning a new language.
             - [x] sqrt 
             - [x] exp
             - [x] log
-        - [ ] Comparison and equality
-            - [ ] =
-            - [ ] <
-            - [ ] <=
-            - [ ] >
-            - [ ] >=
-            - [ ] eq?     *(identity)*
-            - [ ] equal?  *(deep)*
+        - [x] Comparison and equality
+            - [x] =
+            - [x] <
+            - [x] <=
+            - [x] >
+            - [x] >=
+            - [x] eq?     *(identity)*
+            - [x] equal?  *(deep)*
         - [ ] Booleans 
             - [ ] not
             - [ ] and 
