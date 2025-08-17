@@ -1,4 +1,5 @@
 #include "builtin.h"
+#include <float.h>
 #include <math.h>
 #include <string.h>
 
@@ -86,6 +87,42 @@ static eval_result_t builtin_abs(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_num(result));
 }
 
+static eval_result_t builtin_min(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc == 0) {
+    return eval_errf("min: expected at least 1 argument, got %zu", argc);
+  }
+  double min = DBL_MAX;
+  for (size_t i = 0; i < argc; i++) {
+    lval_t *arg = argv[i];
+    if (arg->type != L_NUM) {
+      return eval_errf("min: min on non-number type");
+    }
+    if (arg->as.number <= min) {
+      min = arg->as.number;
+    }
+  }
+  return eval_ok(lval_num(min));
+}
+
+static eval_result_t builtin_max(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc == 0) {
+    return eval_errf("max: expected at least 1 argument, got %zu", argc);
+  }
+  double max = -DBL_MAX;
+  for (size_t i = 0; i < argc; i++) {
+    lval_t *arg = argv[i];
+    if (arg->type != L_NUM) {
+      return eval_errf("min: min on non-number type");
+    }
+    if (arg->as.number >= max) {
+      max = arg->as.number;
+    }
+  }
+  return eval_ok(lval_num(max));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -99,6 +136,8 @@ static const builtin_entry_t k_builtins[] = {
   { "/", builtin_div },
   { "mod", builtin_mod },
   { "abs", builtin_abs },
+  { "min", builtin_min },
+  { "max", builtin_max },
   // { "=", builtin_eq },
   // { "<", builtin_lt },
   // { ">", builtin_gt },
