@@ -33,11 +33,11 @@ it's always good to write a lisp when learning a new language.
         - [ ] defmacro 
     - [ ] Implement builtins
         - [ ] Arithmetic
-            - [ ] +
-            - [ ] -
-            - [ ] *
-            - [ ] /
-            - [ ] mod 
+            - [x] +
+            - [x] -
+            - [x] *
+            - [x] /
+            - [x] mod 
             - [ ] abs
             - [ ] min
             - [ ] max
