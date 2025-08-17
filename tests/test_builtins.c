@@ -374,3 +374,57 @@ Test(div_tests, divide_non_number_errors) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(mod_tests, mod_two_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(mod 10 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert(is_num(r.result, 1.0));
+  lval_free(r.result);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(mod_tests, mod_zero_divisor_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(mod 10 0)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(mod_tests, mod_non_number_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(mod 10 #f)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
