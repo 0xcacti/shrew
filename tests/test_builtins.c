@@ -1518,3 +1518,376 @@ Test(comparison_tests, ge_violates_order) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+// Identity equality (eq) tests
+Test(equality_tests, eq_same_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(eq 5 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, eq_different_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(eq 5 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, eq_same_booleans) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(eq #t #t)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, eq_different_booleans) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(eq #t #f)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, eq_same_symbols) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(eq 'hello 'hello)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, eq_different_symbols) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(eq 'hello 'world)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, eq_different_types) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(eq 5 #t)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, eq_wrong_arg_count) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(eq 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, eq_too_many_args) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(eq 5 5 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+// Deep equality (equal) tests
+Test(equality_tests, equal_same_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal 5 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_different_numbers) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal 5 3)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_same_strings) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal \"hello\" \"hello\")", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_different_strings) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal \"hello\" \"world\")", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_simple_lists) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal '(1 2 3) '(1 2 3))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_different_lists) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal '(1 2 3) '(1 2 4))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_nested_lists) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal '(1 (2 3) 4) '(1 (2 3) 4))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_different_nested_lists) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal '(1 (2 3) 4) '(1 (2 5) 4))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_empty_lists) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal '() '())", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_different_length_lists) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal '(1 2) '(1 2 3))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_mixed_types_in_lists) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal '(1 \"hello\" #t) '(1 \"hello\" #t))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, true);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_different_types) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal 5 \"5\")", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert_eq(r.result->as.boolean, false);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(equality_tests, equal_wrong_arg_count) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(equal 5 5 5)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_not_null(r.error_message);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}

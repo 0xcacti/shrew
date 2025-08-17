@@ -58,6 +58,8 @@ it's always good to write a lisp when learning a new language.
             - [ ] equal?  *(deep)*
         - [ ] Booleans 
             - [ ] not
+            - [ ] and 
+            - [ ] or
         - [ ] Lists / pairs 
             - [ ] cons 
             - [ ] car

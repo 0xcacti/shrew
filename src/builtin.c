@@ -307,6 +307,96 @@ static eval_result_t builtin_ge(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_bool(true));
 }
 
+static eval_result_t builtin_identity_eq(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 2) {
+    return eval_errf("eq?: expected exactly 2 arguments, got %zu", argc);
+  }
+
+  lval_t *a = argv[0];
+  lval_t *b = argv[1];
+
+  if (a->type != b->type) {
+    return eval_ok(lval_bool(false));
+  }
+
+  bool identical = false;
+  switch (a->type) {
+  case L_NIL:
+    identical = true;
+    break;
+  case L_NUM:
+    identical = (a->as.number == b->as.number);
+    break;
+
+  case L_BOOL:
+    identical = (a->as.boolean == b->as.boolean);
+    break;
+
+  case L_SYMBOL:
+    identical = (strcmp(a->as.symbol.name, b->as.symbol.name) == 0);
+    break;
+
+  case L_STRING:
+    identical = (a->as.string.ptr == b->as.string.ptr);
+    break;
+
+  case L_CONS:
+    identical = (a == b);
+    break;
+
+  default:
+    eval_errf("eq?: unsupported type for identity comparison: %s", lval_type_name(a));
+  }
+
+  return eval_ok(lval_bool(identical));
+}
+
+static bool deep_eq_helper(lval_t *a, lval_t *b) {
+  if (a == b) {
+    return true;
+  }
+  if (a->type != b->type) {
+    return false;
+  }
+  switch (a->type) {
+  case L_NIL:
+    return true; // Both are nil, so they are equal.
+  case L_NUM:
+    return (a->as.number == b->as.number);
+  case L_BOOL:
+    return (a->as.boolean == b->as.boolean);
+  case L_SYMBOL:
+    return (strcmp(a->as.symbol.name, b->as.symbol.name) == 0);
+  case L_STRING:
+    if (a->as.string.len != b->as.string.len) {
+      return false;
+    }
+    return (memcmp(a->as.string.ptr, b->as.string.ptr, a->as.string.len) == 0);
+  case L_CONS:
+    if (a->as.cons.car == NULL && b->as.cons.car == NULL) {
+      return true;
+    }
+    if (a->as.cons.car == NULL || b->as.cons.car == NULL) {
+      return false;
+    }
+    return deep_eq_helper(a->as.cons.car, b->as.cons.car) &&
+           deep_eq_helper(a->as.cons.cdr, b->as.cons.cdr);
+  default:
+    return (a == b);
+  }
+}
+
+static eval_result_t builtin_deep_eq(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 2) {
+    return eval_errf("equal: expected exactly 2 arguments, got %zu", argc);
+  }
+
+  bool equal = deep_eq_helper(argv[0], argv[1]);
+  return eval_ok(lval_bool(equal));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -334,6 +424,8 @@ static const builtin_entry_t k_builtins[] = {
   { ">", builtin_gt },
   { "<=", builtin_le },
   { ">=", builtin_ge },
+  { "eq", builtin_identity_eq },
+  { "equal", builtin_deep_eq },
 };
 // clang-format on
 
