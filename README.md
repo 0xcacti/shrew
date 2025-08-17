@@ -41,12 +41,13 @@ it's always good to write a lisp when learning a new language.
             - [x] abs
             - [x] min
             - [x] max
-            - [ ] floor
-            - [ ] ceil
-            - [ ] round
-            - [ ] trunc
+            - [x] floor
+            - [x] ceil
+            - [x] round
+            - [x] trunc
             - [ ] sqrt 
             - [ ] exp
+            - [ ] log
         - [ ] Comparison and equality
             - [ ] =
             - [ ] <

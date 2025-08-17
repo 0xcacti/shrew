@@ -171,6 +171,48 @@ static eval_result_t builtin_trunc(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_num(result));
 }
 
+static eval_result_t builtin_sqrt(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("sqrt: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_NUM) {
+    return eval_errf("sqrt: expected a number argument");
+  }
+  if (argv[0]->as.number < 0.0) {
+    return eval_errf("sqrt: cannot take square root of negative number");
+  }
+  double result = sqrt(argv[0]->as.number);
+  return eval_ok(lval_num(result));
+}
+
+static eval_result_t builtin_exp(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("exp: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_NUM) {
+    return eval_errf("exp: expected a number argument");
+  }
+  double result = exp(argv[0]->as.number);
+  return eval_ok(lval_num(result));
+}
+
+static eval_result_t builtin_log(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("log: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_NUM) {
+    return eval_errf("log: expected a number argument");
+  }
+  if (argv[0]->as.number <= 0.0) {
+    return eval_errf("log: cannot take logarithm of non-positive number");
+  }
+  double result = log(argv[0]->as.number);
+  return eval_ok(lval_num(result));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -190,9 +232,9 @@ static const builtin_entry_t k_builtins[] = {
   { "ceil", builtin_ceil },
   { "round", builtin_round },
   { "trunc", builtin_trunc },
-  // { "sqrt", builtin_sqrt },
-  // { "exp", builtin_exp },
-  // { "log", builtin_log },
+  { "sqrt", builtin_sqrt },
+  { "exp", builtin_exp },
+  { "log", builtin_log },
   // { "=", builtin_eq },
   // { "<", builtin_lt },
   // { ">", builtin_gt },
