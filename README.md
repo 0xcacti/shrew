@@ -39,8 +39,8 @@ it's always good to write a lisp when learning a new language.
             - [x] /
             - [x] mod 
             - [x] abs
-            - [ ] min
-            - [ ] max
+            - [x] min
+            - [x] max
             - [ ] floor
             - [ ] ceil
             - [ ] round

@@ -123,6 +123,54 @@ static eval_result_t builtin_max(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_num(max));
 }
 
+static eval_result_t builtin_floor(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("floor: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_NUM) {
+    return eval_errf("floor: expected a number argument");
+  }
+  double result = floor(argv[0]->as.number);
+  return eval_ok(lval_num(result));
+}
+
+static eval_result_t builtin_ceil(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("ceil: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_NUM) {
+    return eval_errf("ceil: expected a number argument");
+  }
+  double result = ceil(argv[0]->as.number);
+  return eval_ok(lval_num(result));
+}
+
+static eval_result_t builtin_round(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("round: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_NUM) {
+    return eval_errf("round: expected a number argument");
+  }
+  double result = round(argv[0]->as.number);
+  return eval_ok(lval_num(result));
+}
+
+static eval_result_t builtin_trunc(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("trunc: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_NUM) {
+    return eval_errf("trunc: expected a number argument");
+  }
+  double result = trunc(argv[0]->as.number);
+  return eval_ok(lval_num(result));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -138,6 +186,13 @@ static const builtin_entry_t k_builtins[] = {
   { "abs", builtin_abs },
   { "min", builtin_min },
   { "max", builtin_max },
+  { "floor", builtin_floor },
+  { "ceil", builtin_ceil },
+  { "round", builtin_round },
+  { "trunc", builtin_trunc },
+  // { "sqrt", builtin_sqrt },
+  // { "exp", builtin_exp },
+  // { "log", builtin_log },
   // { "=", builtin_eq },
   // { "<", builtin_lt },
   // { ">", builtin_gt },
