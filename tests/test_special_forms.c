@@ -404,3 +404,172 @@ Test(quote_tests, unquote_top_level_errors) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(define_tests, define_binds_number_and_lookup) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("(define x 42)", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &env);
+    cr_assert_eq(r.status, EVAL_OK);
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("x", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &env);
+    cr_assert_eq(r.status, EVAL_OK);
+    cr_assert(is_num(r.result, 42.0));
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(define_tests, define_rhs_is_evaluated) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  cr_assert(env_define(&env, "y", lval_num(5)));
+
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("(define z y)", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &env);
+    cr_assert_eq(r.status, EVAL_OK);
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("z", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &env);
+    cr_assert_eq(r.status, EVAL_OK);
+    cr_assert(is_num(r.result, 5.0));
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(define_tests, define_errors_when_name_not_symbol) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(define 1 2)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert(r.error_message != NULL);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(define_tests, define_errors_on_wrong_arity) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("(define)", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &env);
+    cr_assert_eq(r.status, EVAL_ERR);
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("(define x)", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &env);
+    cr_assert_eq(r.status, EVAL_ERR);
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("(define x 1 2)", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &env);
+    cr_assert_eq(r.status, EVAL_ERR);
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(define_tests, define_errors_when_rhs_fails) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = { 0 };
+  parse_result_t pr = setup_input("(define a b)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert(r.error_message != NULL);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(define_tests, define_binds_quoted_list) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("(define l '(1 2))", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &env);
+    cr_assert_eq(r.status, EVAL_OK);
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+  {
+    parser_t p = { 0 };
+    parse_result_t pr = setup_input("l", &p);
+    eval_result_t r = evaluate_single(pr.expressions[0], &env);
+    cr_assert_eq(r.status, EVAL_OK);
+
+    lval_t *lst = r.result;
+    require_cons(lst);
+    cr_assert(is_num(car(lst), 1.0));
+    lval_t *rest = cdr(lst);
+    require_cons(rest);
+    cr_assert(is_num(car(rest), 2.0));
+    cr_assert_eq(cdr(rest)->type, L_NIL);
+
+    evaluator_result_free(&r);
+    parse_result_free(&pr);
+    parser_free(&p);
+  }
+
+  env_destroy(&env);
+  symbol_intern_free_all();
+}

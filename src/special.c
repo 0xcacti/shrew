@@ -91,8 +91,22 @@ static eval_result_t sf_define(s_expression_t *list, env_t *env) {
     return eval_errf("define requires exactly two arguments, got %zu", list->data.list.count - 1);
   }
 
-  if (list.data[0]->type != L_SYMBOL) {
+  const s_expression_t *name_node = list->data.list.elements[1];
+  if (name_node->type != NODE_ATOM || name_node->data.atom.type != ATOM_SYMBOL) {
+    return eval_errf("define: first argument must be a symbol");
   }
+  const char *name = name_node->data.atom.value.symbol;
+  s_expression_t *value_expr = list->data.list.elements[2];
+  eval_result_t value_res = evaluate_single(value_expr, env);
+  if (value_res.status != EVAL_OK) {
+    return value_res;
+  }
+
+  if (!env_define(env, name, value_res.result)) {
+    lval_free(value_res.result);
+    return eval_errf("define: failed to define variable '%s'", name);
+  }
+  return eval_ok(lval_intern(name));
 }
 
 // Lookups
