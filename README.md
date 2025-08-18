@@ -79,14 +79,15 @@ it's always good to write a lisp when learning a new language.
             - [x] list?
             - [x] pair?
             - [x] function?
-        - [ ] Strings and conversion 
-            - [ ] string-length
-            - [ ] string-append
-            - [ ] number->string
-            - [ ] string->number
-            - [ ] number->string
-            - [ ] symbol->string
-            - [ ] string->symbol
+        - [x] Strings utils
+            - [x] string-length
+            - [x] string-append
+        - [x] Casting
+            - [x] number->string
+            - [x] string->number
+            - [x] number->string
+            - [x] symbol->string
+            - [x] string->symbol
         - [ ] Functional 
             - [ ] apply
             - [ ] error

@@ -848,6 +848,19 @@ static const builtin_entry_t k_builtins[] = {
   { "string->number", builtin_str_to_num },
   { "symbol->string", builtin_symbol_to_str },
   { "string->symbol", builtin_str_to_symbol },
+  // functional
+  // { "apply", builtin_apply },
+  // { "error", builtin_error },
+  // { "print", builtin_print },
+  // { "newline", builtin_newline },
+  // { "map", builtin_map },
+  // { "filter", builtin_filter },
+  // { "reduce", builtin_reduce },
+  // { "fold", builtin_fold },
+  // { "gensym", builtin_gensym },
+  // { "eval", builtin_eval },
+  // { "load", builtin_load },
+
 };
 // clang-format on
 
