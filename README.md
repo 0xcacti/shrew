@@ -69,7 +69,7 @@ it's always good to write a lisp when learning a new language.
             - [x] length
             - [x] append
             - [x] reverse
-        - [ ] Type predicates
+        - [x] Type predicates
             - [x] atom?
             - [x] list?
             - [x] null?
