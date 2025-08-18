@@ -2894,3 +2894,297 @@ Test(type_predicates, function_arity_errors) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(string_builtins, string_length_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input(
+      "(string-length \"\") (string-length \"abc\") (string-length \"hello world\")", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert(is_num(r1.result, 0.0));
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert(is_num(r2.result, 3.0));
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert(is_num(r3.result, 11.0));
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(string_builtins, string_length_arity_and_type_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr =
+      setup_input("(string-length) (string-length \"a\" \"b\") (string-length 1)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_ERR);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(string_builtins, string_append_zero_one_many) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(string-append)"
+                                  "(string-append \"hi\")"
+                                  "(string-append \"a\" \"\" \"bc\" \"d\")",
+                                  &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert_eq(r1.result->type, L_STRING);
+  cr_assert_str_eq(r1.result->as.string.ptr, "");
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert_eq(r2.result->type, L_STRING);
+  cr_assert_str_eq(r2.result->as.string.ptr, "hi");
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert_eq(r3.result->type, L_STRING);
+  cr_assert_str_eq(r3.result->as.string.ptr, "abcd");
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(string_builtins, string_append_type_error_any_non_string_arg_fails) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(string-append 1)"
+                                  "(string-append \"a\" 'x)"
+                                  "(string-append \"a\" \"b\" 3)",
+                                  &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_ERR);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(cast_builtins, number_to_string_roundtrip) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(string->number (number->string 0))"
+                                  "(string->number (number->string -0))"
+                                  "(string->number (number->string 1))"
+                                  "(string->number (number->string -123.5))"
+                                  "(string->number (number->string 3.141592653589793))",
+                                  &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert(is_num(r1.result, 0.0));
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert(is_num(r2.result, 0.0));
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert(is_num(r3.result, 1.0));
+  evaluator_result_free(&r3);
+
+  eval_result_t r4 = evaluate_single(pr.expressions[3], &env);
+  cr_assert_eq(r4.status, EVAL_OK);
+  cr_assert(is_num(r4.result, -123.5));
+  evaluator_result_free(&r4);
+
+  eval_result_t r5 = evaluate_single(pr.expressions[4], &env);
+  cr_assert_eq(r5.status, EVAL_OK);
+  cr_assert(is_num(r5.result, 3.141592653589793));
+  evaluator_result_free(&r5);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(cast_builtins, number_to_string_arity_and_type_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr =
+      setup_input("(number->string) (number->string 1 2) (number->string \"a\")", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_ERR);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(cast_builtins, string_to_number_success_and_failures) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(string->number \"0\")"
+                                  "(string->number \"  +2.5e1 \")"
+                                  "(string->number \"-3.14\")"
+                                  "(string->number \"\")"
+                                  "(string->number \"abc\")"
+                                  "(string->number 1)",
+                                  &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert(is_num(r1.result, 0.0));
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert(is_num(r2.result, 25.0));
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert(is_num(r3.result, -3.14));
+  evaluator_result_free(&r3);
+
+  eval_result_t r4 = evaluate_single(pr.expressions[3], &env);
+  cr_assert_eq(r4.status, EVAL_ERR);
+  evaluator_result_free(&r4);
+
+  eval_result_t r5 = evaluate_single(pr.expressions[4], &env);
+  cr_assert_eq(r5.status, EVAL_ERR);
+  evaluator_result_free(&r5);
+
+  eval_result_t r6 = evaluate_single(pr.expressions[5], &env);
+  cr_assert_eq(r6.status, EVAL_ERR);
+  evaluator_result_free(&r6);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(cast_builtins, symbol_string_roundtrip_and_types) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(symbol->string 'foo)"
+                                  "(string->symbol \"foo\")"
+                                  "(string->symbol \"a-b?+\")"
+                                  "(symbol->string 1)"
+                                  "(string->symbol 1)"
+                                  "(symbol->string)"
+                                  "(string->symbol \"x\" \"y\")",
+                                  &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert_eq(r1.result->type, L_STRING);
+  cr_assert_str_eq(r1.result->as.string.ptr, "foo");
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert_eq(r2.result->type, L_SYMBOL);
+  cr_assert_str_eq(r2.result->as.symbol.name, "foo");
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert_eq(r3.result->type, L_SYMBOL);
+  cr_assert_str_eq(r3.result->as.symbol.name, "a-b?+");
+  evaluator_result_free(&r3);
+
+  eval_result_t r4 = evaluate_single(pr.expressions[3], &env);
+  cr_assert_eq(r4.status, EVAL_ERR);
+  evaluator_result_free(&r4);
+
+  eval_result_t r5 = evaluate_single(pr.expressions[4], &env);
+  cr_assert_eq(r5.status, EVAL_ERR);
+  evaluator_result_free(&r5);
+
+  eval_result_t r6 = evaluate_single(pr.expressions[5], &env);
+  cr_assert_eq(r6.status, EVAL_ERR);
+  evaluator_result_free(&r6);
+
+  eval_result_t r7 = evaluate_single(pr.expressions[6], &env);
+  cr_assert_eq(r7.status, EVAL_ERR);
+  evaluator_result_free(&r7);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}

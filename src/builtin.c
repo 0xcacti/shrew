@@ -1,6 +1,10 @@
 #include "builtin.h"
+#include "symbol.h"
+#include <ctype.h>
+#include <errno.h>
 #include <float.h>
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 static eval_result_t builtin_add(size_t argc, lval_t **argv, env_t *env) {
@@ -642,6 +646,148 @@ static eval_result_t builtin_is_list(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_bool(argv[0]->type == L_CONS || argv[0]->type == L_NIL));
 }
 
+static eval_result_t builtin_str_len(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("string-length: expected exactly 1 argument, got %zu", argc);
+  }
+
+  if (argv[0]->type != L_STRING) {
+    return eval_errf("string-length: expected argument of type string", argc);
+  }
+
+  return eval_ok(lval_num((double)argv[0]->as.string.len));
+}
+
+static eval_result_t builtin_str_append(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  size_t total = 0;
+  for (size_t i = 0; i < argc; i++) {
+    if (argv[i]->type != L_STRING) {
+      return eval_errf("string-append: expected arguments to be strings");
+    }
+    if (SIZE_MAX - total < argv[i]->as.string.len) {
+      return eval_errf("string-append: size overflow");
+    }
+    total += argv[i]->as.string.len;
+  }
+
+  char *buf = malloc(total + 1);
+  if (!buf) {
+    return eval_errf("string-append: allocation failed");
+  }
+
+  size_t off = 0;
+  for (size_t i = 0; i < argc; i++) {
+    memcpy(buf + off, argv[i]->as.string.ptr, argv[i]->as.string.len);
+    off += argv[i]->as.string.len;
+  }
+  buf[total] = '\0';
+
+  eval_result_t res = eval_ok(lval_string_copy(buf, total));
+  free(buf);
+  return res;
+}
+
+static eval_result_t builtin_str_to_num(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("string->number: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_STRING) {
+    return eval_errf("string->number: expected argument of type string");
+  }
+
+  const char *s = argv[0]->as.string.ptr;
+  size_t len = argv[0]->as.string.len;
+
+  char *tmp = malloc(len + 1);
+  if (!tmp) {
+    return eval_errf("string->number: allocation failed");
+  }
+  memcpy(tmp, s, len);
+  tmp[len] = '\0';
+
+  double val = 0.0;
+  int consumed = 0;
+  int got = sscanf(tmp, " %lf %n", &val, &consumed);
+
+  if (got != 1) {
+    free(tmp);
+    return eval_errf("string->number: invalid number string '%s'", tmp);
+  }
+  for (const char *p = tmp + consumed; *p; ++p) {
+    if (!isspace((unsigned char)*p)) {
+      free(tmp);
+      return eval_errf("string->number: trailing characters in '%s'", tmp);
+    }
+  }
+
+  free(tmp);
+  return eval_ok(lval_num(val));
+}
+
+static eval_result_t builtin_num_to_str(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("number->string: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_NUM) {
+    return eval_errf("number->string: expected argument of type number");
+  }
+  int need = snprintf(NULL, 0, "%.*g", DBL_DECIMAL_DIG, argv[0]->as.number);
+  if (need < 0) {
+    return eval_errf("number->string: formatting failed");
+  }
+  char *buf = malloc((size_t)need + 1);
+  if (!buf) {
+    return eval_errf("number->string: allocation failed");
+  }
+  int wrote = snprintf(buf, (size_t)need + 1, "%.*g", DBL_DECIMAL_DIG, argv[0]->as.number);
+  if (wrote != need) {
+    free(buf);
+    return eval_errf("number->string: formatting mismatch");
+  }
+  eval_result_t out = eval_ok(lval_string_copy(buf, (size_t)need));
+  free(buf);
+  return out;
+}
+
+static eval_result_t builtin_symbol_to_str(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("symbol->string: expected exactly 1 argument, got %zu", argc);
+  }
+
+  if (argv[0]->type != L_SYMBOL) {
+    return eval_errf("symbol->string: expected argument of type symbol");
+  }
+
+  return eval_ok(lval_string_copy(argv[0]->as.symbol.name, strlen(argv[0]->as.symbol.name)));
+}
+
+static eval_result_t builtin_str_to_symbol(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("string->symbol: expected exactly 1 argument, got %zu", argc);
+  }
+
+  if (argv[0]->type != L_STRING) {
+    return eval_errf("string->symbol: expected argument of type string");
+  }
+
+  const char *s = argv[0]->as.string.ptr;
+  size_t len = argv[0]->as.string.len;
+
+  // Intern the symbol
+  const char *interned = symbol_intern(s);
+  if (!interned) {
+    return eval_errf("string->symbol: failed to intern symbol '%.*s'", (int)len, s);
+  }
+
+  return eval_ok(lval_intern(interned));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -694,7 +840,14 @@ static const builtin_entry_t k_builtins[] = {
   { "symbol?", builtin_is_symbol },
   { "string?", builtin_is_string },
   { "function?", builtin_is_function },
+  // string operations
+  { "string-length", builtin_str_len },
+  { "string-append", builtin_str_append },
   // casting 
+  { "number->string", builtin_num_to_str },
+  { "string->number", builtin_str_to_num },
+  { "symbol->string", builtin_symbol_to_str },
+  { "string->symbol", builtin_str_to_symbol },
 };
 // clang-format on
 
