@@ -86,6 +86,15 @@ static eval_result_t sf_unquote(s_expression_t *list, env_t *env) {
   return eval_errf("unquote is only valid inside a quote form");
 }
 
+static eval_result_t sf_define(s_expression_t *list, env_t *env) {
+  if (list->data.list.count != 3) {
+    return eval_errf("define requires exactly two arguments, got %zu", list->data.list.count - 1);
+  }
+
+  if (list.data[0]->type != L_SYMBOL) {
+  }
+}
+
 // Lookups
 typedef struct {
   const char *name;
@@ -96,6 +105,7 @@ typedef struct {
 static const special_entry_t k_specials[] = {
   { "quote", sf_quote }, 
   { "unquote", sf_unquote },
+  { "define", sf_define },
   // {"if",     sf_if},
   // {"define", sf_define},
   // {"begin",  sf_begin},

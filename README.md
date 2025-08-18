@@ -28,6 +28,7 @@ it's always good to write a lisp when learning a new language.
         - [ ] if
         - [ ] define
         - [ ] lambda
+        - [ ] lambda
         - [ ] begin
         - [ ] cond
         - [ ] defmacro 

@@ -623,7 +623,6 @@ static eval_result_t builtin_is_function(size_t argc, lval_t **argv, env_t *env)
   bool is_function = false;
 
   if (argv[0]->type == L_SYMBOL) {
-    // Check if it's a builtin function
     builtin_fn fn = lookup_builtin(argv[0]->as.symbol.name);
     is_function = (fn != NULL);
     if (!is_function) {
