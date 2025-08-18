@@ -2473,3 +2473,424 @@ Test(list_tests, reverse_non_cons_error) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(type_predicates, atom_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr =
+      setup_input("(atom? 1) (atom? '()) (atom? '(1)) (atom? \"hi\") (atom? 'x)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert_eq(r1.result->type, L_BOOL);
+  cr_assert(r1.result->as.boolean);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert_eq(r2.result->type, L_BOOL);
+  cr_assert(!r2.result->as.boolean);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert_eq(r3.result->type, L_BOOL);
+  cr_assert(!r3.result->as.boolean);
+  evaluator_result_free(&r3);
+
+  eval_result_t r4 = evaluate_single(pr.expressions[3], &env);
+  cr_assert_eq(r4.status, EVAL_OK);
+  cr_assert_eq(r4.result->type, L_BOOL);
+  cr_assert(r4.result->as.boolean);
+  evaluator_result_free(&r4);
+
+  eval_result_t r5 = evaluate_single(pr.expressions[4], &env);
+  cr_assert_eq(r5.status, EVAL_OK);
+  cr_assert_eq(r5.result->type, L_BOOL);
+  cr_assert(r5.result->as.boolean);
+  evaluator_result_free(&r5);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, atom_arity_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(atom?) (atom? 1 2)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, list_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(list? '()) (list? '(1 2)) (list? 1)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert(r1.result->type == L_BOOL && r1.result->as.boolean);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert(r2.result->type == L_BOOL && r2.result->as.boolean);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert(r3.result->type == L_BOOL && !r3.result->as.boolean);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, list_arity_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(list?) (list? 1 2)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, null_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(null? '()) (null? '(1)) (null? 1)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert(r1.result->type == L_BOOL && r1.result->as.boolean);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert(r2.result->type == L_BOOL && !r2.result->as.boolean);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert(r3.result->type == L_BOOL && !r3.result->as.boolean);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, null_arity_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(null?) (null? 1 2)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, number_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(number? 3.14) (number? 'x) (number? '())", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert(r1.result->type == L_BOOL && r1.result->as.boolean);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert(r2.result->type == L_BOOL && !r2.result->as.boolean);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert(r3.result->type == L_BOOL && !r3.result->as.boolean);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, number_arity_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(number?) (number? 1 2)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, symbol_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(symbol? 'x) (symbol? 1) (symbol? \"hi\")", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert(r1.result->type == L_BOOL && r1.result->as.boolean);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert(r2.result->type == L_BOOL && !r2.result->as.boolean);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert(r3.result->type == L_BOOL && !r3.result->as.boolean);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, symbol_arity_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(symbol?) (symbol? 'x 'y)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, string_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(string? \"hi\") (string? 1) (string? 'x)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert(r1.result->type == L_BOOL && r1.result->as.boolean);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert(r2.result->type == L_BOOL && !r2.result->as.boolean);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert(r3.result->type == L_BOOL && !r3.result->as.boolean);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, string_arity_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(string?) (string? \"a\" \"b\")", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, pair_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(pair? '(1 . 2)) (pair? '(1)) (pair? '()) (pair? 1)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert(r1.result->type == L_BOOL && r1.result->as.boolean);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert(r2.result->type == L_BOOL && r2.result->as.boolean);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert(r3.result->type == L_BOOL && !r3.result->as.boolean);
+  evaluator_result_free(&r3);
+
+  eval_result_t r4 = evaluate_single(pr.expressions[3], &env);
+  cr_assert_eq(r4.status, EVAL_OK);
+  cr_assert(r4.result->type == L_BOOL && !r4.result->as.boolean);
+  evaluator_result_free(&r4);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, pair_arity_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(pair?) (pair? 1 2)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, function_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(function? 'number?) (function? 'x) (function? 1)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert(r1.result->type == L_BOOL && r1.result->as.boolean);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert(r2.result->type == L_BOOL && !r2.result->as.boolean);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert(r3.result->type == L_BOOL && !r3.result->as.boolean);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(type_predicates, function_arity_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(function?) (function? 'x 'y)", &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}

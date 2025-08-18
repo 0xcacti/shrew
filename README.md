@@ -78,7 +78,7 @@ it's always good to write a lisp when learning a new language.
             - [x] string?
             - [x] list?
             - [x] pair?
-            - [ ] function?
+            - [x] function?
         - [ ] Strings and conversion 
             - [ ] string-length
             - [ ] string-append
