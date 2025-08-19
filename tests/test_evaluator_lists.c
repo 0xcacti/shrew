@@ -82,7 +82,7 @@ Test(evaluator_lists, head_is_number_errors) {
 
   cr_assert_eq(res.status, EVAL_ERR);
   cr_assert_not_null(res.error_message);
-  cr_assert(strstr(res.error_message, "Unknown function") != NULL);
+  cr_assert(strstr(res.error_message, "Expected a function, got: 0") == 0);
 
   evaluator_result_free(&res);
   parse_result_free(&pr);

@@ -54,13 +54,13 @@ eval_result_t eval_errf(const char *fmt, ...) {
 }
 
 eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) {
-  if (!fn) return eval_errf("Cannot evaluate a NULL function.");
+  if (!fn) return eval_errf("Unknown function");
   if (fn->type == L_SYMBOL) {
     const char *name = fn->as.symbol.name;
     builtin_fn bf = lookup_builtin(name);
     if (bf) return bf(argc, argv, env);
     lval_t *binding = env_get_ref(env, name);
-    if (!binding) return eval_errf("Unbound symbol: %s", name);
+    if (!binding) return eval_errf("Unknown function: %s", name);
     fn = binding;
   }
   if (fn->type != L_FUNCTION) {
