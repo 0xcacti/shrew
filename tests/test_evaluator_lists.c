@@ -98,7 +98,7 @@ Test(evaluator_lists, head_is_list_errors) {
   cr_assert(env_init(&env, NULL));
 
   parser_t parser = { 0 };
-  parse_result_t pr = setup_input("((+ 1 2) 3)", &parser);
+  parse_result_t pr = setup_input("((meow-fn 1 2) 3)", &parser);
 
   s_expression_t *expr = pr.expressions[0];
   eval_result_t res = evaluate_single(expr, &env);

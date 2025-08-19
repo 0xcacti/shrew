@@ -788,6 +788,37 @@ static eval_result_t builtin_str_to_symbol(size_t argc, lval_t **argv, env_t *en
   return eval_ok(lval_intern(interned));
 }
 
+// static eval_result_t builtin_apply(size_t argc, lval_t **argv, env_t *env) {
+//   if (argc < 2) {
+//     return eval_errf("apply: expected at least 2 arguments, got %zu", argc);
+//   }
+//
+//   lval_t *fn = argv[0];
+//   if (fn->type != L_FUNCTION || fn->type != L_SYMBOL) {
+//     return eval_errf("apply: first argument must be a function or symbol");
+//   }
+//
+//   if (fn->type == L_SYMBOL) {
+//     lval_t *binding = env_get_ref(env, fn->as.symbol.name);
+//     if (binding == NULL) {
+//       return eval_errf("apply: symbol '%s' is not bound to a function", fn->as.symbol.name);
+//     }
+//     if (binding->type != L_FUNCTION) {
+//       return eval_errf("apply: symbol '%s' is not bound to a function", fn->as.symbol.name);
+//     }
+//     fn = binding;
+//   }
+//
+//   // Create a new list for the arguments
+//   lval_t *args = lval_nil();
+//   for (size_t i = argc - 1; i > 0; i--) {
+//     args = lval_cons(lval_copy(argv[i]), args);
+//   }
+//
+//   // Call the function with the arguments
+//   return eval_call(fn, args, env);
+// }
+
 typedef struct {
   const char *name;
   builtin_fn fn;

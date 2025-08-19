@@ -53,6 +53,22 @@ eval_result_t eval_errf(const char *fmt, ...) {
   return r;
 }
 
+eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) {
+  if (!fn) return eval_errf("Cannot evaluate a NULL function.");
+  if (fn->type == L_SYMBOL) {
+    const char *name = fn->as.symbol.name;
+    builtin_fn bf = lookup_builtin(name);
+    if (bf) return bf(argc, argv, env);
+    lval_t *binding = env_get_ref(env, name);
+    if (!binding) return eval_errf("Unbound symbol: %s", name);
+    fn = binding;
+  }
+  if (fn->type != L_FUNCTION) {
+    return eval_errf("Expected a function, got: %s", lval_type_name(fn));
+  }
+  return eval_errf("call: user functions unimplemented");
+}
+
 eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
   if (!expr) return eval_errf("Cannot evaluate a NULL expression.");
 
@@ -91,29 +107,43 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
     const char *head_name = NULL;
     if (sexp_is_symbol(head, &head_name)) {
       special_form_fn sf = lookup_special_form(head_name);
-      builtin_fn bf = lookup_builtin(head_name);
       if (sf) {
         return sf(expr, env);
-      } else if (bf) {
-
-        size_t argc = expr->data.list.count - 1;
-        lval_t **argv = malloc(argc * sizeof(lval_t *));
-        if (!argv) {
-          return eval_errf("Memory allocation failed for function arguments.");
-        }
-        for (size_t i = 0; i < argc; i++) {
-          eval_result_t res = evaluate_single(expr->data.list.elements[i + 1], env);
-          if (res.status != EVAL_OK) {
-            free(argv);
-            return res;
-          }
-          argv[i] = res.result;
-        }
-        return bf(argc, argv, env);
       }
     }
-    return eval_errf("Unknown function: %s", head_name ? head_name : "unknown");
+    size_t argc = expr->data.list.count - 1;
+    lval_t **argv = malloc(argc * sizeof(lval_t *));
+    if (!argv) {
+      return eval_errf("Memory allocation failed for arguments array.");
+    }
+    for (size_t i = 0; i < argc; i++) {
+      eval_result_t res = evaluate_single(expr->data.list.elements[i + 1], env);
+      if (res.status != EVAL_OK) {
+        free(argv);
+        return res;
+      }
+      argv[i] = res.result;
+    }
+    lval_t *callee = NULL;
+    bool temp_sym = false;
 
+    if (sexp_is_symbol(head, &head_name)) {
+      callee = lval_intern(head_name);
+      temp_sym = true;
+    } else {
+      eval_result_t res = evaluate_single(head, env);
+      if (res.status != EVAL_OK) {
+        free(argv);
+        return res;
+      }
+      callee = res.result;
+    }
+    eval_result_t r = evaluate_call(callee, argc, argv, env);
+    if (temp_sym) {
+      lval_free(callee);
+    }
+    free(argv);
+    return r;
   default:
     return eval_errf("Unknown expression type: %d", expr->type);
   }
