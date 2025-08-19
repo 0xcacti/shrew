@@ -66,6 +66,7 @@ eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) 
   if (fn->type != L_FUNCTION) {
     return eval_errf("Expected a function, got: %s", lval_type_name(fn));
   }
+
   return eval_errf("call: user functions unimplemented");
 }
 
