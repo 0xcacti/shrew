@@ -67,7 +67,39 @@ eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) 
     return eval_errf("Expected a function, got: %s", lval_type_name(fn));
   }
 
-  return eval_errf("call: user functions unimplemented");
+  if (argc != fn->as.function.param_count) {
+    return eval_errf("Function expects %zu arguments, got %zu", fn->as.function.param_count, argc);
+  }
+
+  env_t call_env;
+  bool success = env_init(&call_env, fn->as.function.closure);
+  if (!success) {
+    return eval_errf("Failed to initialize function environment");
+  }
+
+  for (size_t i = 0; i < argc; i++) {
+    if (!env_set(&call_env, fn->as.function.params[i], lval_copy(argv[i]))) {
+      env_destroy(&call_env);
+      return eval_errf("Failed to set parameter '%s' in function environment",
+                       fn->as.function.params[i]);
+    }
+  }
+
+  eval_result_t result = eval_ok(lval_nil());
+  if (fn->as.function.body_count == 0) {
+    env_destroy(&call_env);
+    return result;
+  }
+  for (size_t i = 0; i < fn->as.function.body_count; i++) {
+    result = evaluate_single(fn->as.function.body[i], &call_env);
+    if (result.status != EVAL_OK) {
+      env_destroy(&call_env);
+      return result;
+    }
+  }
+
+  env_destroy(&call_env);
+  return result;
 }
 
 eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
