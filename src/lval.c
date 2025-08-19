@@ -72,7 +72,11 @@ lval_t *lval_nil(void) {
   return v;
 }
 
-lval_t *lval_function(char **params, size_t param_count, lval_t *body, struct env *closure) {
+lval_t *lval_function(char **params,
+                      size_t param_count,
+                      s_expression_t **body,
+                      size_t body_count,
+                      struct env *closure) {
   lval_t *v = malloc(sizeof(lval_t));
   if (!v) return NULL;
   v->mark = 0;
@@ -81,6 +85,7 @@ lval_t *lval_function(char **params, size_t param_count, lval_t *body, struct en
   v->as.function.params = params;
   v->as.function.param_count = param_count;
   v->as.function.body = body;
+  v->as.function.body_count = body_count;
   v->as.function.closure = closure;
 
   return v;
@@ -220,16 +225,24 @@ lval_t *lval_copy(const lval_t *v) {
       copy->as.function.params = NULL;
     }
 
-    copy->as.function.body = lval_copy(v->as.function.body);
-    if (!copy->as.function.body) {
-      for (size_t i = 0; i < copy->as.function.param_count; i++) {
-        free(copy->as.function.params[i]);
+    copy->as.function.body_count = v->as.function.body_count;
+    if (v->as.function.body_count > 0) {
+      copy->as.function.body = malloc(v->as.function.body_count * sizeof(s_expression_t *));
+      if (!copy->as.function.body) {
+        perror("malloc");
+        for (size_t i = 0; i < v->as.function.param_count; i++) {
+          free(copy->as.function.params[i]);
+        }
+        free(copy->as.function.params);
+        free(copy);
+        exit(EXIT_FAILURE);
       }
-      free(copy->as.function.params);
-      free(copy);
-      exit(EXIT_FAILURE);
+      memcpy(copy->as.function.body,
+             v->as.function.body,
+             v->as.function.body_count * sizeof(s_expression_t *));
+    } else {
+      copy->as.function.body = NULL;
     }
-
     copy->as.function.closure = v->as.function.closure;
     break;
   default:
@@ -256,7 +269,7 @@ void lval_free(lval_t *v) {
       free(v->as.function.params[i]);
     }
     free(v->as.function.params);
-    lval_free(v->as.function.body);
+    free(v->as.function.body);
     break;
   case L_SYMBOL:
   case L_NIL:

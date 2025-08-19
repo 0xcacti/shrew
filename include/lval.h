@@ -2,6 +2,7 @@
 #define LVAL_H
 #include <stdbool.h>
 #include <stddef.h>
+#include <parser.h>
 
 typedef enum {
   L_NIL,
@@ -25,7 +26,8 @@ typedef struct lval {
     struct {
       char **params;
       size_t param_count;
-      struct lval *body;
+      s_expression_t **body;
+      size_t body_count;
       struct env *closure;
     } function;
   } as;
@@ -39,7 +41,7 @@ lval_t *lval_string_copy(const char *s, size_t len);
 lval_t *lval_intern(const char *name);
 lval_t *lval_nil(void);
 lval_t *lval_cons(lval_t *car, lval_t *cdr);
-lval_t *lval_function(char **params, size_t param_count, lval_t *body, struct env *closure);
+lval_t *lval_function(char **params, size_t param_count, s_expression_t **body, size_t body_count, struct env *closure);
 
 const char *lval_type_name(const lval_t *v);
 void lval_print(const lval_t *v);

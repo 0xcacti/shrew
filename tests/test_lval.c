@@ -1,4 +1,5 @@
 #include "lval.h"
+#include "parser.h"
 #include "symbol.h"
 #include <criterion/criterion.h>
 #include <criterion/redirect.h>
@@ -114,9 +115,13 @@ Test(lval_tests, it_creates_function) {
   params[0] = strdup("x");
   params[1] = strdup("y");
 
-  lval_t *body = lval_intern("body_expr");
+  s_expression_t **body = malloc(sizeof(s_expression_t *));
+  body[0] = malloc(sizeof(s_expression_t));
+  body[0]->type = NODE_ATOM;
+  body[0]->data.atom.type = ATOM_SYMBOL;
+  body[0]->data.atom.value.symbol = "body_symbol";
 
-  lval_t *func = lval_function(params, 2, body, NULL);
+  lval_t *func = lval_function(params, 2, body, 1, NULL);
 
   cr_assert_not_null(func, "function lval should not be NULL");
   cr_assert_eq(func->type, L_FUNCTION, "lval type should be L_FUNCTION");
@@ -124,7 +129,6 @@ Test(lval_tests, it_creates_function) {
   cr_assert_str_eq(func->as.function.params[0], "x", "first param should be 'x'");
   cr_assert_str_eq(func->as.function.params[1], "y", "second param should be 'y'");
   cr_assert_not_null(func->as.function.body, "function body should not be NULL");
-  cr_assert_eq(func->as.function.body->type, L_SYMBOL, "body should be a symbol");
 
   lval_free(func);
   symbol_intern_free_all();
@@ -135,8 +139,13 @@ Test(lval_tests, function_copy_works) {
 
   char **params = malloc(1 * sizeof(char *));
   params[0] = strdup("x");
-  lval_t *body = lval_num(42);
-  lval_t *original = lval_function(params, 1, body, NULL);
+  s_expression_t **body = malloc(sizeof(s_expression_t *));
+  body[0] = malloc(sizeof(s_expression_t));
+  body[0]->type = NODE_ATOM;
+  body[0]->data.atom.type = ATOM_NUMBER;
+  body[0]->data.atom.value.number = 42;
+
+  lval_t *original = lval_function(params, 1, body, 1, NULL);
 
   lval_t *copy = lval_copy(original);
 
@@ -200,8 +209,13 @@ Test(lval_tests, prints_function, .init = redirect_stdout) {
 
   char **params = malloc(1 * sizeof(char *));
   params[0] = strdup("x");
-  lval_t *body = lval_num(42);
-  lval_t *func = lval_function(params, 1, body, NULL);
+  s_expression_t **body = malloc(sizeof(s_expression_t *));
+  body[0] = malloc(sizeof(s_expression_t));
+  body[0]->type = NODE_ATOM;
+  body[0]->data.atom.type = ATOM_NUMBER;
+  body[0]->data.atom.value.number = 42;
+
+  lval_t *func = lval_function(params, 1, body, 1, NULL);
 
   lval_print(func);
   putchar('\n');
