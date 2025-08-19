@@ -160,3 +160,27 @@ Test(evaluator_lists, nested_calls_evaluate_arguments) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(evaluator_lists, evaluates_user_defined_functions) {
+  symbol_intern_init();
+
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t parser = { 0 };
+  parse_result_t pr = setup_input("(define ", &parser);
+
+  s_expression_t *expr = pr.expressions[0];
+  eval_result_t res = evaluate_single(expr, &env);
+
+  cr_assert_eq(res.status, EVAL_OK);
+  cr_assert_not_null(res.result);
+  cr_assert(is_num(res.result, 16.0));
+
+  lval_free(res.result);
+  evaluator_result_free(&res);
+  parse_result_free(&pr);
+  parser_free(&parser);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}

@@ -109,6 +109,38 @@ static eval_result_t sf_define(s_expression_t *list, env_t *env) {
   return eval_ok(lval_intern(name));
 }
 
+static eval_result_t sf_lambda(s_expression_t *list, env_t *env) {
+  if (list->data.list.count < 3) {
+    return eval_errf("lambda requires at least two arguments, got %zu", list->data.list.count - 1);
+  }
+
+  s_expression_t *params_expr = list->data.list.elements[1];
+  if (params_expr->type != NODE_LIST) {
+    return eval_errf("lambda: first argument must be a list of parameters");
+  }
+
+  if (params_expr->data.list.tail != NULL) {
+    return eval_errf("lambda: parameter list cannot be dotted");
+  }
+
+  size_t param_count = params_expr->data.list.count;
+  char **params = NULL;
+  if (param_count > 0) {
+    params = malloc(param_count * sizeof(char *));
+    if (!params) {
+      return eval_errf("lambda: memory allocation failed for parameters");
+    }
+    for (size_t i = 0; i < param_count; ++i) {
+      const s_expression_t *param = params_expr->data.list.elements[i];
+      if (param->type != NODE_ATOM || param->data.atom.type != ATOM_SYMBOL) {
+        free(params);
+        return eval_errf("lambda: parameter %zu is not a symbol", i + 1);
+      }
+      params[i] = param->data.atom.value.symbol;
+    }
+  }
+}
+
 // Lookups
 typedef struct {
   const char *name;
@@ -120,6 +152,7 @@ static const special_entry_t k_specials[] = {
   { "quote", sf_quote }, 
   { "unquote", sf_unquote },
   { "define", sf_define },
+  { "lambda", sf_lambda },
   // {"if",     sf_if},
   // {"define", sf_define},
   // {"begin",  sf_begin},
