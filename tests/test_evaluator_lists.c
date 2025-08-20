@@ -202,8 +202,8 @@ Test(evaluator_lists, evaluates_user_defined_functions_simple) {
 Test(evaluator_lists, evaluates_user_defined_functions_closure) {
   symbol_intern_init();
 
-  env_t env;
-  cr_assert(env_init(&env, NULL));
+  env_t *env = malloc(sizeof(env_t));
+  cr_assert(env_init(env, NULL));
 
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define make-adder (lambda (a) (lambda (x) (+ x a))))"
@@ -211,15 +211,15 @@ Test(evaluator_lists, evaluates_user_defined_functions_closure) {
                                   " (add7 9)",
                                   &parser);
 
-  eval_result_t r0 = evaluate_single(pr.expressions[0], &env);
+  eval_result_t r0 = evaluate_single(pr.expressions[0], env);
   cr_assert_eq(r0.status, EVAL_OK);
   evaluator_result_free(&r0);
 
-  eval_result_t r1 = evaluate_single(pr.expressions[1], &env);
+  eval_result_t r1 = evaluate_single(pr.expressions[1], env);
   cr_assert_eq(r1.status, EVAL_OK);
   evaluator_result_free(&r1);
 
-  eval_result_t r2 = evaluate_single(pr.expressions[2], &env);
+  eval_result_t r2 = evaluate_single(pr.expressions[2], env);
   cr_assert_eq(r2.status, EVAL_OK);
   cr_assert_not_null(r2.result);
   cr_assert(is_num(r2.result, 16.0));
@@ -228,6 +228,6 @@ Test(evaluator_lists, evaluates_user_defined_functions_closure) {
   evaluator_result_free(&r2);
   parse_result_free(&pr);
   parser_free(&parser);
-  env_destroy(&env);
+  env_destroy(env);
   symbol_intern_free_all();
 }
