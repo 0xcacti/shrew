@@ -8,8 +8,13 @@
 typedef struct env {
   struct env *parent; 
   hashtable *store;   
+  size_t refcount;
+  bool managed;
 } env_t;
 
+env_t *env_new(env_t *parent);
+void env_retain(env_t *env);
+void env_release(env_t *env);
 bool env_init(env_t *env, env_t *parent);
 void env_destroy(env_t *env);
 bool env_define(env_t *env, const char *key, lval_t *value);

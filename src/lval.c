@@ -1,4 +1,5 @@
 #include "lval.h"
+#include "env.h"
 #include "symbol.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -87,6 +88,7 @@ lval_t *lval_function(char **params,
   v->as.function.body = body;
   v->as.function.body_count = body_count;
   v->as.function.closure = closure;
+  if (closure) env_retain(closure);
 
   return v;
 }
@@ -244,6 +246,7 @@ lval_t *lval_copy(const lval_t *v) {
       copy->as.function.body = NULL;
     }
     copy->as.function.closure = v->as.function.closure;
+    if (copy->as.function.closure) env_retain(copy->as.function.closure);
     break;
   default:
     fprintf(stderr, "lval_copy: unsupported type %d\n", (int)v->type);
@@ -270,6 +273,7 @@ void lval_free(lval_t *v) {
     }
     free(v->as.function.params);
     free(v->as.function.body);
+    if (v->as.function.closure) env_release(v->as.function.closure);
     break;
   case L_SYMBOL:
   case L_NIL:

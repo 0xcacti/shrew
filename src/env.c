@@ -4,9 +4,54 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void env_release(env_t *env) {
+  if (!env || !env->managed) return;
+  if (--env->refcount == 0) {
+    env_t *p = env->parent;
+    env_destroy(env);
+    if (p && p->managed) env_release(p);
+    free(env);
+  }
+}
+
+void env_retain(env_t *env) {
+  if (!env || !env->managed) return;
+  env->refcount++;
+}
+
+env_t *env_new(env_t *parent) {
+  env_t *env = malloc(sizeof *env);
+  if (!env) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+  env->parent = parent;
+  env->refcount = 1;
+  env->managed = true;
+  env->store = malloc(sizeof *env->store);
+  if (!env->store) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+
+  ht_error err = (ht_error){ 0 };
+  if (!ht_init(env->store, 16, &err)) {
+    fprintf(stderr,
+            "env_init: ht_init failed: %s\n",
+            err.error_message ? err.error_message : "(unknown)");
+    free(env->store);
+    env->store = NULL;
+    exit(EXIT_FAILURE);
+  }
+  if (parent && parent->managed) env_retain(parent);
+  return env;
+}
+
 bool env_init(env_t *env, env_t *parent) {
   if (!env) return false;
   env->parent = parent;
+  env->refcount = 0;
+  env->managed = false;
 
   env->store = malloc(sizeof *env->store);
   if (!env->store) {
