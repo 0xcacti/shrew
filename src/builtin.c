@@ -713,8 +713,9 @@ static eval_result_t builtin_str_to_num(size_t argc, lval_t **argv, env_t *env) 
   int got = sscanf(tmp, " %lf %n", &val, &consumed);
 
   if (got != 1) {
+    eval_result_t err = eval_errf("string->number: invalid number string '%s'", tmp);
     free(tmp);
-    return eval_errf("string->number: invalid number string '%s'", tmp);
+    return err;
   }
   for (const char *p = tmp + consumed; *p; ++p) {
     if (!isspace((unsigned char)*p)) {
