@@ -3188,3 +3188,23 @@ Test(cast_builtins, symbol_string_roundtrip_and_types) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(functional_builtins, apply_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(apply + '(1 2 3))", &p);
+
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_NUM);
+  cr_assert_float_eq(r.result->as.number, 6.0, 1e-10);
+  evaluator_result_free(&r);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}

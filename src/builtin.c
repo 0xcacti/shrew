@@ -780,7 +780,6 @@ static eval_result_t builtin_str_to_symbol(size_t argc, lval_t **argv, env_t *en
   const char *s = argv[0]->as.string.ptr;
   size_t len = argv[0]->as.string.len;
 
-  // Intern the symbol
   const char *interned = symbol_intern(s);
   if (!interned) {
     return eval_errf("string->symbol: failed to intern symbol '%.*s'", (int)len, s);
@@ -789,36 +788,59 @@ static eval_result_t builtin_str_to_symbol(size_t argc, lval_t **argv, env_t *en
   return eval_ok(lval_intern(interned));
 }
 
-// static eval_result_t builtin_apply(size_t argc, lval_t **argv, env_t *env) {
-//   if (argc < 2) {
-//     return eval_errf("apply: expected at least 2 arguments, got %zu", argc);
-//   }
-//
-//   lval_t *fn = argv[0];
-//   if (fn->type != L_FUNCTION || fn->type != L_SYMBOL) {
-//     return eval_errf("apply: first argument must be a function or symbol");
-//   }
-//
-//   if (fn->type == L_SYMBOL) {
-//     lval_t *binding = env_get_ref(env, fn->as.symbol.name);
-//     if (binding == NULL) {
-//       return eval_errf("apply: symbol '%s' is not bound to a function", fn->as.symbol.name);
-//     }
-//     if (binding->type != L_FUNCTION) {
-//       return eval_errf("apply: symbol '%s' is not bound to a function", fn->as.symbol.name);
-//     }
-//     fn = binding;
-//   }
-//
-//   // Create a new list for the arguments
-//   lval_t *args = lval_nil();
-//   for (size_t i = argc - 1; i > 0; i--) {
-//     args = lval_cons(lval_copy(argv[i]), args);
-//   }
-//
-//   // Call the function with the arguments
-//   return eval_call(fn, args, env);
-// }
+static eval_result_t builtin_apply(size_t argc, lval_t **argv, env_t *env) {
+  if (argc < 2) {
+    return eval_errf("apply: expected at least 2 arguments, got %zu", argc);
+  }
+
+  lval_t *fn = argv[0];
+  if (fn->type != L_FUNCTION && fn->type != L_SYMBOL) {
+    return eval_errf("apply: first argument must be a function or symbol");
+  }
+
+  // 🔑 resolve symbol to function
+  if (fn->type == L_SYMBOL) {
+    lval_t *binding = env_get_ref(env, fn->as.symbol.name);
+    if (!binding) {
+      return eval_errf("apply: unbound symbol '%s'", fn->as.symbol.name);
+    }
+    if (binding->type != L_FUNCTION) {
+      return eval_errf("apply: symbol '%s' is not a function", fn->as.symbol.name);
+    }
+    fn = binding;
+  }
+
+  size_t total = (argc - 2);
+
+  lval_t *last = argv[argc - 1];
+  if (last->type != L_CONS && last->type != L_NIL) {
+    return eval_errf("apply: last argument must be a list, got %s", lval_type_name(last));
+  }
+
+  for (lval_t *cur = last; cur->type == L_CONS; cur = cur->as.cons.cdr) {
+    total++;
+  }
+
+  lval_t **flat = malloc(sizeof(lval_t *) * total);
+  if (!flat) return eval_errf("apply: out of memory");
+
+  size_t idx = 0;
+  for (size_t i = 1; i < argc - 1; i++) {
+    flat[idx++] = lval_copy(argv[i]);
+  }
+  for (lval_t *cur = last; cur->type == L_CONS; cur = cur->as.cons.cdr) {
+    flat[idx++] = lval_copy(cur->as.cons.car);
+  }
+
+  eval_result_t result = evaluate_call(fn, total, flat, env);
+
+  for (size_t i = 0; i < total; i++) {
+    lval_free(flat[i]);
+  }
+  free(flat);
+
+  return result;
+}
 
 typedef struct {
   const char *name;
@@ -881,7 +903,7 @@ static const builtin_entry_t k_builtins[] = {
   { "symbol->string", builtin_symbol_to_str },
   { "string->symbol", builtin_str_to_symbol },
   // functional
-  // { "apply", builtin_apply },
+  { "apply", builtin_apply },
   // { "error", builtin_error },
   // { "print", builtin_print },
   // { "newline", builtin_newline },
