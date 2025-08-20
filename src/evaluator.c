@@ -71,14 +71,14 @@ eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) 
     return eval_errf("Function expects %zu arguments, got %zu", fn->as.function.param_count, argc);
   }
 
-  env_t call_env;
+  env_t *call_env = malloc(sizeof(env_t));
   bool success = env_init(&call_env, fn->as.function.closure);
   if (!success) {
     return eval_errf("Failed to initialize function environment");
   }
 
   for (size_t i = 0; i < argc; i++) {
-    if (!env_set(&call_env, fn->as.function.params[i], lval_copy(argv[i]))) {
+    if (!env_define(&call_env, fn->as.function.params[i], lval_copy(argv[i]))) {
       env_destroy(&call_env);
       return eval_errf("Failed to set parameter '%s' in function environment",
                        fn->as.function.params[i]);

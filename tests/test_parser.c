@@ -14,17 +14,12 @@ Test(parser_tests, it_parses_numbers) {
   s_expression_t **sexp = r.expressions;
 
   cr_assert_not_null(sexp, "s_expression should not be NULL");
-  cr_assert_eq(sexp[0]->type, NODE_ATOM,
-               "first s_expression should be an atom");
-  cr_assert_eq(sexp[0]->data.atom.type, ATOM_NUMBER,
-               "atom type should be ATOM_NUMBER");
+  cr_assert_eq(sexp[0]->type, NODE_ATOM, "first s_expression should be an atom");
+  cr_assert_eq(sexp[0]->data.atom.type, ATOM_NUMBER, "atom type should be ATOM_NUMBER");
   cr_assert_eq(sexp[0]->data.atom.value.number, 123, "atom should be 123");
-  cr_assert_eq(sexp[1]->type, NODE_ATOM,
-               "second s_expression should be an atom");
-  cr_assert_eq(sexp[1]->data.atom.type, ATOM_NUMBER,
-               "atom type should be ATOM_NUMBER");
-  cr_assert_float_eq(sexp[1]->data.atom.value.number, 0.134, 0.001,
-                     "atom should be 0.134");
+  cr_assert_eq(sexp[1]->type, NODE_ATOM, "second s_expression should be an atom");
+  cr_assert_eq(sexp[1]->data.atom.type, ATOM_NUMBER, "atom type should be ATOM_NUMBER");
+  cr_assert_float_eq(sexp[1]->data.atom.value.number, 0.134, 0.001, "atom should be 0.134");
   cleanup(&r, &parser);
 }
 
@@ -35,22 +30,15 @@ Test(parser_tests, it_parses_symbols) {
   parse_result_t r = parser_parse(&parser);
   s_expression_t **sexp = r.expressions;
 
-  cr_assert_eq(sexp[0]->type, NODE_ATOM,
-               "first s_expression should be an atom");
-  cr_assert_eq(sexp[0]->data.atom.type, ATOM_SYMBOL,
-               "atom type should be ATOM_SYMBOL");
-  cr_assert_str_eq(sexp[0]->data.atom.value.symbol, "foo",
-                   "first symbol should be 'foo'");
+  cr_assert_eq(sexp[0]->type, NODE_ATOM, "first s_expression should be an atom");
+  cr_assert_eq(sexp[0]->data.atom.type, ATOM_SYMBOL, "atom type should be ATOM_SYMBOL");
+  cr_assert_str_eq(sexp[0]->data.atom.value.symbol, "foo", "first symbol should be 'foo'");
 
-  cr_assert_eq(sexp[1]->data.atom.type, ATOM_SYMBOL,
-               "second atom type should be ATOM_SYMBOL");
-  cr_assert_str_eq(sexp[1]->data.atom.value.symbol, "bar-baz",
-                   "second symbol should be 'bar-baz'");
+  cr_assert_eq(sexp[1]->data.atom.type, ATOM_SYMBOL, "second atom type should be ATOM_SYMBOL");
+  cr_assert_str_eq(sexp[1]->data.atom.value.symbol, "bar-baz", "second symbol should be 'bar-baz'");
 
-  cr_assert_eq(sexp[2]->data.atom.type, ATOM_SYMBOL,
-               "third atom type should be ATOM_SYMBOL");
-  cr_assert_str_eq(sexp[2]->data.atom.value.symbol, "?qux!",
-                   "third symbol should be '?qux!'");
+  cr_assert_eq(sexp[2]->data.atom.type, ATOM_SYMBOL, "third atom type should be ATOM_SYMBOL");
+  cr_assert_str_eq(sexp[2]->data.atom.value.symbol, "?qux!", "third symbol should be '?qux!'");
   cleanup(&r, &parser);
 }
 
@@ -63,16 +51,14 @@ Test(parser_tests, it_parses_strings) {
 
   cr_assert_eq(sexp[0]->type, NODE_ATOM);
   cr_assert_eq(sexp[0]->data.atom.type, ATOM_STRING);
-  cr_assert_str_eq(sexp[0]->data.atom.value.string, "hello world",
-                   "should parse a normal string");
+  cr_assert_str_eq(sexp[0]->data.atom.value.string, "hello world", "should parse a normal string");
 
   cr_assert_eq(sexp[1]->data.atom.type, ATOM_STRING);
-  cr_assert_str_eq(sexp[1]->data.atom.value.string, "",
-                   "should parse the empty string");
+  cr_assert_str_eq(sexp[1]->data.atom.value.string, "", "should parse the empty string");
 
   cr_assert_eq(sexp[2]->data.atom.type, ATOM_STRING);
-  cr_assert_str_eq(sexp[2]->data.atom.value.string, "escaped \"quote\"",
-                   "should unescape embedded quotes");
+  cr_assert_str_eq(
+      sexp[2]->data.atom.value.string, "escaped \"quote\"", "should unescape embedded quotes");
   cleanup(&r, &parser);
 }
 
@@ -85,12 +71,10 @@ Test(parser_tests, it_parses_booleans) {
 
   cr_assert_eq(sexp[0]->type, NODE_ATOM);
   cr_assert_eq(sexp[0]->data.atom.type, ATOM_BOOLEAN);
-  cr_assert_eq(sexp[0]->data.atom.value.boolean, true,
-               "first boolean should be true");
+  cr_assert_eq(sexp[0]->data.atom.value.boolean, true, "first boolean should be true");
 
   cr_assert_eq(sexp[1]->data.atom.type, ATOM_BOOLEAN);
-  cr_assert_eq(sexp[1]->data.atom.value.boolean, false,
-               "second boolean should be false");
+  cr_assert_eq(sexp[1]->data.atom.value.boolean, false, "second boolean should be false");
   cleanup(&r, &parser);
 }
 
@@ -103,67 +87,82 @@ Test(parser_tests, it_parses_lists) {
 
   cr_assert_eq(parser.error_count, 0, "there should be no parsing errors");
   cr_assert_eq(sexp[0]->type, NODE_LIST, "first s_expression should be a list");
-  cr_assert_eq(sexp[0]->data.list.count, 3,
-               "first list should have 3 elements");
-  cr_assert_eq(sexp[0]->data.list.elements[0]->type, NODE_ATOM,
+  cr_assert_eq(sexp[0]->data.list.count, 3, "first list should have 3 elements");
+  cr_assert_eq(sexp[0]->data.list.elements[0]->type,
+               NODE_ATOM,
                "first element of first list should be an atom");
-  cr_assert_eq(sexp[0]->data.list.elements[0]->data.atom.type, ATOM_NUMBER,
+  cr_assert_eq(sexp[0]->data.list.elements[0]->data.atom.type,
+               ATOM_NUMBER,
                "first element of first list should be a number atom");
-  cr_assert_float_eq(sexp[0]->data.list.elements[0]->data.atom.value.number, 1,
-                     0.001, "first element of first list should be 1");
-  cr_assert_eq(sexp[0]->data.list.elements[1]->type, NODE_ATOM,
+  cr_assert_float_eq(sexp[0]->data.list.elements[0]->data.atom.value.number,
+                     1,
+                     0.001,
+                     "first element of first list should be 1");
+  cr_assert_eq(sexp[0]->data.list.elements[1]->type,
+               NODE_ATOM,
                "second element of first list should be an atom");
-  cr_assert_eq(sexp[0]->data.list.elements[1]->data.atom.type, ATOM_NUMBER,
+  cr_assert_eq(sexp[0]->data.list.elements[1]->data.atom.type,
+               ATOM_NUMBER,
                "second element of first list should be a number atom");
-  cr_assert_float_eq(sexp[0]->data.list.elements[1]->data.atom.value.number, 2,
-                     0.001, "second element of first list should be 2");
-  cr_assert_eq(sexp[0]->data.list.elements[2]->type, NODE_ATOM,
+  cr_assert_float_eq(sexp[0]->data.list.elements[1]->data.atom.value.number,
+                     2,
+                     0.001,
+                     "second element of first list should be 2");
+  cr_assert_eq(sexp[0]->data.list.elements[2]->type,
+               NODE_ATOM,
                "third element of first list should be an atom");
-  cr_assert_eq(sexp[0]->data.list.elements[2]->data.atom.type, ATOM_NUMBER,
+  cr_assert_eq(sexp[0]->data.list.elements[2]->data.atom.type,
+               ATOM_NUMBER,
                "third element of first list should be a number atom");
-  cr_assert_float_eq(sexp[0]->data.list.elements[2]->data.atom.value.number, 3,
-                     0.001, "third element of first list should be 3");
-  cr_assert_eq(sexp[1]->type, NODE_LIST,
-               "second s_expression should be a list");
+  cr_assert_float_eq(sexp[0]->data.list.elements[2]->data.atom.value.number,
+                     3,
+                     0.001,
+                     "third element of first list should be 3");
+  cr_assert_eq(sexp[1]->type, NODE_LIST, "second s_expression should be a list");
 
-  cr_assert_eq(sexp[1]->data.list.count, 3,
-               "second list should have 3 elements");
-  cr_assert_eq(sexp[1]->data.list.elements[0]->type, NODE_ATOM,
+  cr_assert_eq(sexp[1]->data.list.count, 3, "second list should have 3 elements");
+  cr_assert_eq(sexp[1]->data.list.elements[0]->type,
+               NODE_ATOM,
                "first element of second list should be an atom");
-  cr_assert_eq(sexp[1]->data.list.elements[0]->data.atom.type, ATOM_SYMBOL,
+  cr_assert_eq(sexp[1]->data.list.elements[0]->data.atom.type,
+               ATOM_SYMBOL,
                "first element of second list should be a symbol atom");
   cr_assert_str_eq(sexp[1]->data.list.elements[0]->data.atom.value.symbol,
-                   "foo", "first element of second list should be 'foo'");
-  cr_assert_eq(sexp[1]->data.list.elements[1]->type, NODE_ATOM,
+                   "foo",
+                   "first element of second list should be 'foo'");
+  cr_assert_eq(sexp[1]->data.list.elements[1]->type,
+               NODE_ATOM,
                "second element of second list should be an atom");
-  cr_assert_eq(sexp[1]->data.list.elements[1]->data.atom.type, ATOM_SYMBOL,
+  cr_assert_eq(sexp[1]->data.list.elements[1]->data.atom.type,
+               ATOM_SYMBOL,
                "second element of second list should be a symbol atom");
   cr_assert_str_eq(sexp[1]->data.list.elements[1]->data.atom.value.symbol,
-                   "bar", "second element of second list should be 'bar'");
-  cr_assert_eq(sexp[1]->data.list.elements[2]->type, NODE_LIST,
+                   "bar",
+                   "second element of second list should be 'bar'");
+  cr_assert_eq(sexp[1]->data.list.elements[2]->type,
+               NODE_LIST,
                "third element of second list should be a list");
-  cr_assert_eq(sexp[1]->data.list.elements[2]->data.list.count, 2,
+  cr_assert_eq(sexp[1]->data.list.elements[2]->data.list.count,
+               2,
                "third element of second list should have 2 elements");
   cr_assert_eq(sexp[1]->data.list.elements[2]->data.list.elements[0]->type,
-               NODE_ATOM, "first element of third list should be an atom");
-  cr_assert_eq(
-      sexp[1]->data.list.elements[2]->data.list.elements[0]->data.atom.type,
-      ATOM_SYMBOL, "first element of third list should be a symbol atom");
-  cr_assert_str_eq(sexp[1]
-                       ->data.list.elements[2]
-                       ->data.list.elements[0]
-                       ->data.atom.value.symbol,
-                   "baz", "first element of third list should be 'baz'");
+               NODE_ATOM,
+               "first element of third list should be an atom");
+  cr_assert_eq(sexp[1]->data.list.elements[2]->data.list.elements[0]->data.atom.type,
+               ATOM_SYMBOL,
+               "first element of third list should be a symbol atom");
+  cr_assert_str_eq(sexp[1]->data.list.elements[2]->data.list.elements[0]->data.atom.value.symbol,
+                   "baz",
+                   "first element of third list should be 'baz'");
   cr_assert_eq(sexp[1]->data.list.elements[2]->data.list.elements[1]->type,
-               NODE_ATOM, "second element of third list should be an atom");
-  cr_assert_eq(
-      sexp[1]->data.list.elements[2]->data.list.elements[1]->data.atom.type,
-      ATOM_SYMBOL, "second element of third list should be a symbol atom");
-  cr_assert_str_eq(sexp[1]
-                       ->data.list.elements[2]
-                       ->data.list.elements[1]
-                       ->data.atom.value.symbol,
-                   "qux", "second element of third list should be 'qux'");
+               NODE_ATOM,
+               "second element of third list should be an atom");
+  cr_assert_eq(sexp[1]->data.list.elements[2]->data.list.elements[1]->data.atom.type,
+               ATOM_SYMBOL,
+               "second element of third list should be a symbol atom");
+  cr_assert_str_eq(sexp[1]->data.list.elements[2]->data.list.elements[1]->data.atom.value.symbol,
+                   "qux",
+                   "second element of third list should be 'qux'");
   for (size_t i = 0; i < parser.error_count; i++) {
     fprintf(stderr, "Error: %s\n", parser.errors[i]);
   }
@@ -279,28 +278,22 @@ Test(parser_tests, it_parses_quoted_atoms) {
 
   cr_assert_eq(sexp[0]->type, NODE_LIST);
   cr_assert_eq(sexp[0]->data.list.count, 2);
-  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol,
-                   "quote");
+  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol, "quote");
   cr_assert_eq(sexp[0]->data.list.elements[1]->data.atom.value.number, 5);
 
   cr_assert_eq(sexp[1]->type, NODE_LIST);
   cr_assert_eq(sexp[1]->data.list.count, 2);
-  cr_assert_str_eq(sexp[1]->data.list.elements[0]->data.atom.value.symbol,
-                   "quote");
-  cr_assert_str_eq(sexp[1]->data.list.elements[1]->data.atom.value.symbol,
-                   "foo");
+  cr_assert_str_eq(sexp[1]->data.list.elements[0]->data.atom.value.symbol, "quote");
+  cr_assert_str_eq(sexp[1]->data.list.elements[1]->data.atom.value.symbol, "foo");
 
   cr_assert_eq(sexp[2]->type, NODE_LIST);
   cr_assert_eq(sexp[2]->data.list.count, 2);
-  cr_assert_str_eq(sexp[2]->data.list.elements[0]->data.atom.value.symbol,
-                   "quote");
-  cr_assert_str_eq(sexp[2]->data.list.elements[1]->data.atom.value.string,
-                   "meow");
+  cr_assert_str_eq(sexp[2]->data.list.elements[0]->data.atom.value.symbol, "quote");
+  cr_assert_str_eq(sexp[2]->data.list.elements[1]->data.atom.value.string, "meow");
 
   cr_assert_eq(sexp[2]->type, NODE_LIST);
   cr_assert_eq(sexp[2]->data.list.count, 2);
-  cr_assert_str_eq(sexp[2]->data.list.elements[0]->data.atom.value.symbol,
-                   "quote");
+  cr_assert_str_eq(sexp[2]->data.list.elements[0]->data.atom.value.symbol, "quote");
   cr_assert_eq(sexp[2]->data.list.elements[1]->data.atom.value.boolean, true);
   cleanup(&r, &parser);
 }
@@ -315,15 +308,13 @@ Test(parser_tests, it_parses_quoted_lists) {
 
   cr_assert_eq(sexp[0]->type, NODE_LIST);
   cr_assert_eq(sexp[0]->data.list.count, 2);
-  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol,
-                   "quote");
+  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol, "quote");
   cr_assert_eq(sexp[0]->data.list.elements[1]->type, NODE_LIST);
   cr_assert_eq(sexp[0]->data.list.elements[1]->data.list.count, 3);
 
   cr_assert_eq(sexp[1]->type, NODE_LIST);
   cr_assert_eq(sexp[1]->data.list.count, 2);
-  cr_assert_str_eq(sexp[1]->data.list.elements[0]->data.atom.value.symbol,
-                   "quote");
+  cr_assert_str_eq(sexp[1]->data.list.elements[0]->data.atom.value.symbol, "quote");
   cr_assert_eq(sexp[1]->data.list.elements[1]->type, NODE_LIST);
   cr_assert_eq(sexp[1]->data.list.elements[1]->data.list.count, 3);
   cleanup(&r, &parser);
@@ -339,8 +330,7 @@ Test(parser_tests, it_parses_quasiquote_with_unquotes) {
 
   cr_assert_eq(sexp[0]->type, NODE_LIST);
   cr_assert_eq(sexp[0]->data.list.count, 2);
-  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol,
-                   "quasiquote");
+  cr_assert_str_eq(sexp[0]->data.list.elements[0]->data.atom.value.symbol, "quasiquote");
 
   s_expression_t *inner = sexp[0]->data.list.elements[1];
   cr_assert_eq(inner->type, NODE_LIST);
@@ -353,8 +343,7 @@ Test(parser_tests, it_parses_quasiquote_with_unquotes) {
 
   s_expression_t *us = inner->data.list.elements[2];
   cr_assert_eq(us->type, NODE_LIST);
-  cr_assert_str_eq(us->data.list.elements[0]->data.atom.value.symbol,
-                   "unquote-splicing");
+  cr_assert_str_eq(us->data.list.elements[0]->data.atom.value.symbol, "unquote-splicing");
   cr_assert_str_eq(us->data.list.elements[1]->data.atom.value.symbol, "c");
   cleanup(&r, &parser);
 }
@@ -386,4 +375,29 @@ Test(parser_tests, unquote_within_quasiquote_is_ok) {
 
   cr_assert_eq(parser.error_count, 0);
   cleanup(&r, &parser);
+}
+
+Test(parser_test, parses_two_forms) {
+  const char *src = "(define add2 (lambda (x) (+ x 2))) "
+                    "(add2 14)";
+
+  lexer_t lex = lexer_new(src);
+  parser_t p = parser_new(&lex);
+  parse_result_t pr = parser_parse(&p);
+
+  if (p.error_count) {
+    for (size_t i = 0; i < p.error_count; i++) {
+      fprintf(stderr, "Parser error[%zu]: %s\n", i, p.errors[i]);
+    }
+  }
+
+  cr_assert_eq(p.error_count, 0, "Parser should have no errors");
+  cr_assert_eq(pr.count, 2, "Should parse exactly 2 top-level expressions");
+
+  /* Basic structural sanity */
+  cr_assert_eq(pr.expressions[0]->type, NODE_LIST);
+  cr_assert_eq(pr.expressions[1]->type, NODE_LIST);
+
+  parse_result_free(&pr);
+  parser_free(&p);
 }

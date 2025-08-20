@@ -114,31 +114,68 @@ static eval_result_t sf_lambda(s_expression_t *list, env_t *env) {
     return eval_errf("lambda requires at least two arguments, got %zu", list->data.list.count - 1);
   }
 
-  s_expression_t *params_expr = list->data.list.elements[1];
-  if (params_expr->type != NODE_LIST) {
+  s_expression_t *params_node = list->data.list.elements[1];
+  if (params_node->type != NODE_LIST) {
     return eval_errf("lambda: first argument must be a list of parameters");
   }
 
-  if (params_expr->data.list.tail != NULL) {
+  if (params_node->data.list.tail != NULL) {
     return eval_errf("lambda: parameter list cannot be dotted");
   }
 
-  size_t param_count = params_expr->data.list.count;
+  size_t param_count = params_node->data.list.count;
   char **params = NULL;
   if (param_count > 0) {
     params = malloc(param_count * sizeof(char *));
-    if (!params) {
-      return eval_errf("lambda: memory allocation failed for parameters");
-    }
+    if (!params) return eval_errf("lambda: memory allocation failed for parameters");
     for (size_t i = 0; i < param_count; ++i) {
-      const s_expression_t *param = params_expr->data.list.elements[i];
+      const s_expression_t *param = params_node->data.list.elements[i];
       if (param->type != NODE_ATOM || param->data.atom.type != ATOM_SYMBOL) {
+        for (size_t j = 0; j < i; ++j) {
+          free(params[j]);
+        }
         free(params);
         return eval_errf("lambda: parameter %zu is not a symbol", i + 1);
       }
-      params[i] = param->data.atom.value.symbol;
+      const char *param_name = param->data.atom.value.symbol;
+      params[i] = strdup(param_name);
+      if (!params[i]) {
+        for (size_t j = 0; j < i; ++j) {
+          free(params[j]);
+        }
+        free(params);
+        return eval_errf("lambda: memory allocation failed for parameter '%s'", param_name);
+      }
     }
   }
+
+  size_t body_count = list->data.list.count - 2;
+  s_expression_t **body = NULL;
+  if (body_count > 0) {
+    body = malloc(body_count * sizeof(s_expression_t *));
+    if (!body) {
+      for (size_t i = 0; i < param_count; i++) {
+        free(params[i]);
+      }
+      free(params);
+      return eval_errf("lambda: memory allocation failed for body");
+    }
+    for (size_t i = 0; i < body_count; ++i) {
+      body[i] = list->data.list.elements[i + 2];
+    }
+  }
+
+  lval_t *fn = lval_function(params, param_count, body, body_count, env);
+  if (!fn) {
+    for (size_t i = 0; i < param_count; i++) {
+      free(params[i]);
+    }
+    free(params);
+    free(body);
+    return eval_errf("lambda: failed to create function");
+  }
+
+  return eval_ok(fn);
 }
 
 // Lookups
@@ -156,7 +193,6 @@ static const special_entry_t k_specials[] = {
   // {"if",     sf_if},
   // {"define", sf_define},
   // {"begin",  sf_begin},
-  // {"lambda", sf_lambda},
 };
 // clang-format on
 
