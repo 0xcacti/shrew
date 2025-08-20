@@ -72,14 +72,19 @@ eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) 
   }
 
   env_t *call_env = malloc(sizeof(env_t));
-  bool success = env_init(&call_env, fn->as.function.closure);
+  if (!call_env) {
+    return eval_errf("Memory allocation failed for function environment.");
+  }
+
+  bool success = env_init(call_env, fn->as.function.closure);
   if (!success) {
+    env_destroy(call_env);
     return eval_errf("Failed to initialize function environment");
   }
 
   for (size_t i = 0; i < argc; i++) {
-    if (!env_define(&call_env, fn->as.function.params[i], lval_copy(argv[i]))) {
-      env_destroy(&call_env);
+    if (!env_define(call_env, fn->as.function.params[i], lval_copy(argv[i]))) {
+      /* leak for now (see TODO below) */
       return eval_errf("Failed to set parameter '%s' in function environment",
                        fn->as.function.params[i]);
     }
@@ -87,18 +92,16 @@ eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) 
 
   eval_result_t result = eval_ok(lval_nil());
   if (fn->as.function.body_count == 0) {
-    env_destroy(&call_env);
     return result;
   }
   for (size_t i = 0; i < fn->as.function.body_count; i++) {
-    result = evaluate_single(fn->as.function.body[i], &call_env);
+    result = evaluate_single(fn->as.function.body[i], call_env);
     if (result.status != EVAL_OK) {
-      env_destroy(&call_env);
+      env_destroy(call_env);
       return result;
     }
   }
 
-  env_destroy(&call_env);
   return result;
 }
 
