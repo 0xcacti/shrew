@@ -71,7 +71,11 @@ eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) 
     return eval_errf("Function expects %zu arguments, got %zu", fn->as.function.param_count, argc);
   }
 
-  env_t *call_env = env_new(fn->as.function.closure ? fn->as.function.closure : env);
+  env_t *parent = fn->as.function.closure;
+  if (!parent) {
+    return eval_errf("internal: function has no closure");
+  }
+  env_t *call_env = env_new(parent);
   for (size_t i = 0; i < argc; i++) {
     if (!env_define(call_env, fn->as.function.params[i], lval_copy(argv[i]))) {
       env_release(call_env);

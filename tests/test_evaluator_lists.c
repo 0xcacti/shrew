@@ -231,3 +231,99 @@ Test(evaluator_lists, evaluates_user_defined_functions_closure) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(evaluator_lists, evaluates_user_defined_functions_multi_body) {
+  symbol_intern_init();
+
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t parser = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(define add2 (lambda (x) 0 (+ x 2)))"
+                                  " (add2 14)",
+                                  &parser);
+
+  eval_result_t r0 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r0.status, EVAL_OK);
+  evaluator_result_free(&r0);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  cr_assert_not_null(r1.result);
+  cr_assert(is_num(r1.result, 16.0));
+  lval_free(r1.result);
+  evaluator_result_free(&r1);
+
+  parse_result_free(&pr);
+  parser_free(&parser);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(evaluator_lists, evaluates_user_defined_functions_shadowing) {
+  symbol_intern_init();
+
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t parser = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(define a 5)"
+                                  " (define make (lambda (a) (lambda (x) (+ a x))))"
+                                  " ((make 7) 3)",
+                                  &parser);
+
+  eval_result_t r0 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r0.status, EVAL_OK);
+  evaluator_result_free(&r0);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert_not_null(r2.result);
+  cr_assert(is_num(r2.result, 10.0));
+  lval_free(r2.result);
+  evaluator_result_free(&r2);
+
+  parse_result_free(&pr);
+  parser_free(&parser);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(evaluator_lists, evaluates_user_defined_functions_three_level_closure) {
+  symbol_intern_init();
+
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  parser_t parser = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(define make2 (lambda (a) (lambda (b) (lambda (x) (+ x a b)))))"
+                                  " (define add1 (make2 1))"
+                                  " (define add3 (add1 2))"
+                                  " (add3 10)",
+                                  &parser);
+
+  eval_result_t r0 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r0.status, EVAL_OK);
+  evaluator_result_free(&r0);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[3], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert_not_null(r3.result);
+  cr_assert(is_num(r3.result, 13.0));
+  lval_free(r3.result);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&parser);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
