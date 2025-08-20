@@ -798,14 +798,11 @@ static eval_result_t builtin_apply(size_t argc, lval_t **argv, env_t *env) {
     return eval_errf("apply: first argument must be a function or symbol");
   }
 
-  // 🔑 resolve symbol to function
+  // 🔑 If it's a symbol, resolve it to the bound function
   if (fn->type == L_SYMBOL) {
     lval_t *binding = env_get_ref(env, fn->as.symbol.name);
-    if (!binding) {
-      return eval_errf("apply: unbound symbol '%s'", fn->as.symbol.name);
-    }
-    if (binding->type != L_FUNCTION) {
-      return eval_errf("apply: symbol '%s' is not a function", fn->as.symbol.name);
+    if (!binding || binding->type != L_FUNCTION) {
+      return eval_errf("apply: symbol '%s' is not bound to a function", fn->as.symbol.name);
     }
     fn = binding;
   }
@@ -923,4 +920,10 @@ builtin_fn lookup_builtin(const char *name) {
     if (strcmp(name, k_builtins[i].name) == 0) return k_builtins[i].fn;
   }
   return NULL;
+}
+
+void env_add_builtins(env_t *env) {
+  for (size_t i = 0; i < sizeof k_builtins / sizeof k_builtins[0]; i++) {
+    lval_t *fn = lval_function(k_builtins[i].fn, );
+  }
 }

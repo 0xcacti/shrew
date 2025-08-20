@@ -3198,6 +3198,9 @@ Test(functional_builtins, apply_basic) {
   parse_result_t pr = setup_input("(apply + '(1 2 3))", &p);
 
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  if (r.status != EVAL_OK) {
+    cr_log_error("Apply failed: %s", r.error_message);
+  }
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert_eq(r.result->type, L_NUM);
   cr_assert_float_eq(r.result->as.number, 6.0, 1e-10);

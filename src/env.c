@@ -1,4 +1,5 @@
 #include "env.h"
+#include "builtin.h"
 #include "hashtable.h"
 #include <stdbool.h>
 #include <stdio.h>
