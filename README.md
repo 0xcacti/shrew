@@ -19,6 +19,8 @@ it's always good to write a lisp when learning a new language.
     - [x] Implement env 
     - [x] Implement atom evaluation 
     - [x] Implement list evaluation 
+    - [ ] Implement user defined functions
+    - [ ] Implement closures
     - [ ] Implement special forms
         - [x] quote family
             - [x] quote
