@@ -96,10 +96,10 @@ it's always good to write a lisp when learning a new language.
             - [x] foldl
             - [x] foldr
             - [x] filter
+            - [x] gensym
+            - [x] error
             - [ ] eval
             - [ ] load
-            - [ ] error
-            - [ ] gensym
         - [x] I/O
             - [ ] print
             - [ ] newline
