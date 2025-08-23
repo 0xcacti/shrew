@@ -3688,3 +3688,70 @@ Test(functional_builtins, reduce_errors) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(functional_builtins, foldl_vs_foldr_subtraction) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(list (foldl - 0 '(1 2 3)) (foldr - 0 '(1 2 3)))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_CONS);
+  lval_t *a = r.result->as.cons.car;
+  lval_t *b = r.result->as.cons.cdr->as.cons.car;
+  cr_assert_eq(a->type, L_NUM);
+  cr_assert_eq(b->type, L_NUM);
+  cr_assert_float_eq(a->as.number, -6.0, 1e-10);
+  cr_assert_float_eq(b->as.number, 2.0, 1e-10);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, foldr_cons_rebuilds_list_foldl_reverses) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr =
+      setup_input("(list (equal (foldr cons '() '(1 2 3)) '(1 2 3))"
+                  "      (equal (foldl (lambda (acc x) (cons x acc)) '() '(1 2 3)) '(3 2 1)))",
+                  &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  lval_t *a = r.result->as.cons.car;
+  lval_t *b = r.result->as.cons.cdr->as.cons.car;
+  cr_assert(a->type == L_BOOL && a->as.boolean);
+  cr_assert(b->type == L_BOOL && b->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, foldr_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(foldr + '())"
+                                  "(foldr + '(1 . 2))",
+                                  &p);
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
