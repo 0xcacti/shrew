@@ -13,6 +13,160 @@ static bool is_proper_call_list(const s_expression_t *list) {
   return list->data.list.tail == NULL;
 }
 
+static s_expression_t *sexp_from_lval(const lval_t *v);
+static void sexp_free_owned(s_expression_t *n);
+static eval_result_t datum_from_sexp(const s_expression_t *e);
+
+static s_expression_t *make_atom_symbol(const char *name) {
+  s_expression_t *a = malloc(sizeof *a);
+  if (!a) return NULL;
+  a->type = NODE_ATOM;
+  a->data.atom.type = ATOM_SYMBOL;
+  a->data.atom.value.symbol = strdup(name);
+  return a;
+}
+static s_expression_t *make_atom_string(const char *s) {
+  s_expression_t *a = malloc(sizeof *a);
+  if (!a) return NULL;
+  a->type = NODE_ATOM;
+  a->data.atom.type = ATOM_STRING;
+  a->data.atom.value.string = strdup(s);
+  return a;
+}
+static s_expression_t *make_atom_number(double x) {
+  s_expression_t *a = malloc(sizeof *a);
+  if (!a) return NULL;
+  a->type = NODE_ATOM;
+  a->data.atom.type = ATOM_NUMBER;
+  a->data.atom.value.number = x;
+  return a;
+}
+static s_expression_t *make_atom_boolean(bool b) {
+  s_expression_t *a = malloc(sizeof *a);
+  if (!a) return NULL;
+  a->type = NODE_ATOM;
+  a->data.atom.type = ATOM_BOOLEAN;
+  a->data.atom.value.boolean = b;
+  return a;
+}
+static s_expression_t *make_list_nodes(s_expression_t **elems, size_t n, s_expression_t *tail) {
+  s_expression_t *l = malloc(sizeof *l);
+  if (!l) return NULL;
+  l->type = NODE_LIST;
+  l->data.list.elements = elems;
+  l->data.list.count = n;
+  l->data.list.tail = tail;
+  return l;
+}
+
+static s_expression_t *sexp_from_lval(const lval_t *v) {
+  if (!v) return NULL;
+  switch (v->type) {
+  case L_NUM:
+    return make_atom_number(v->as.number);
+  case L_BOOL:
+    return make_atom_boolean(v->as.boolean);
+  case L_STRING:
+    return make_atom_string(v->as.string.ptr);
+  case L_SYMBOL:
+    return make_atom_symbol(v->as.symbol.name);
+  case L_NIL: {
+    s_expression_t **none = malloc(0);
+    return make_list_nodes(none, 0, NULL);
+  }
+  case L_CONS: {
+    /* count proper prefix */
+    size_t n = 0;
+    const lval_t *cur = v;
+    while (cur->type == L_CONS) {
+      n++;
+      cur = cur->as.cons.cdr;
+    }
+    s_expression_t *tail = NULL;
+    if (cur->type != L_NIL) {
+      tail = sexp_from_lval(cur);
+      if (!tail) return NULL;
+    }
+    s_expression_t **elems = malloc(sizeof(*elems) * n);
+    if (!elems) {
+      if (tail) sexp_free_owned(tail);
+      return NULL;
+    }
+    const lval_t *x = v;
+    for (size_t i = 0; i < n; ++i) {
+      elems[i] = sexp_from_lval(x->as.cons.car);
+      if (!elems[i]) {
+        for (size_t j = 0; j < i; ++j)
+          sexp_free_owned(elems[j]);
+        free(elems);
+        if (tail) sexp_free_owned(tail);
+        return NULL;
+      }
+      x = x->as.cons.cdr;
+    }
+    return make_list_nodes(elems, n, tail);
+  }
+  default:
+    /* treat functions/natives as symbols by name when embedded in data is unexpected */
+    return NULL;
+  }
+}
+
+static void sexp_free_owned(s_expression_t *n) {
+  if (!n) return;
+  switch (n->type) {
+  case NODE_ATOM:
+    if (n->data.atom.type == ATOM_SYMBOL && n->data.atom.value.symbol)
+      free(n->data.atom.value.symbol);
+    if (n->data.atom.type == ATOM_STRING && n->data.atom.value.string)
+      free(n->data.atom.value.string);
+    break;
+  case NODE_LIST:
+    for (size_t i = 0; i < n->data.list.count; ++i)
+      sexp_free_owned(n->data.list.elements[i]);
+    free(n->data.list.elements);
+    sexp_free_owned(n->data.list.tail);
+    break;
+  }
+  free(n);
+}
+
+static eval_result_t datum_from_sexp(const s_expression_t *e) {
+  if (e->type == NODE_ATOM) {
+    const atom_t *a = &e->data.atom;
+    switch (a->type) {
+    case ATOM_NUMBER:
+      return eval_ok(lval_num(a->value.number));
+    case ATOM_BOOLEAN:
+      return eval_ok(lval_bool(a->value.boolean));
+    case ATOM_STRING:
+      return eval_ok(lval_string_copy(a->value.string, strlen(a->value.string)));
+    case ATOM_SYMBOL:
+      return eval_ok(lval_intern(a->value.symbol));
+    default:
+      return eval_errf("datum_from_sexp: bad atom");
+    }
+  }
+  if (e->type == NODE_LIST) {
+    lval_t *tail = e->data.list.tail ? NULL : lval_nil();
+    if (e->data.list.tail) {
+      eval_result_t t = datum_from_sexp(e->data.list.tail);
+      if (t.status != EVAL_OK) return t;
+      tail = t.result;
+    }
+    for (ssize_t i = (ssize_t)e->data.list.count - 1; i >= 0; --i) {
+      eval_result_t it = datum_from_sexp(e->data.list.elements[i]);
+      if (it.status != EVAL_OK) {
+        if (tail) lval_free(tail);
+        return it;
+      }
+      tail = lval_cons(it.result, tail);
+    }
+    return eval_ok(tail);
+  }
+  return eval_errf("datum_from_sexp: bad node");
+}
+
 eval_result_t eval_ok(lval_t *result) {
   eval_result_t r = { 0 };
   r.status = EVAL_OK;
@@ -44,6 +198,36 @@ eval_result_t eval_errf(const char *fmt, ...) {
   r.error_message = msg;
   r.result = NULL;
   return r;
+}
+
+static eval_result_t expand_macro_and_eval(lval_t *macro_fn, s_expression_t *call, env_t *env) {
+  size_t argc = call->data.list.count - 1;
+  lval_t **argv = NULL;
+  if (argc) {
+    argv = calloc(argc, sizeof(lval_t *));
+    if (!argv) return eval_errf("Memory allocation failed for macro arguments array.");
+    for (size_t i = 0; i < argc; i++) {
+      eval_result_t res = datum_from_sexp(call->data.list.elements[i + 1]);
+      if (res.status != EVAL_OK) {
+        free(argv);
+        return res;
+      }
+      argv[i] = res.result;
+    }
+  }
+
+  eval_result_t res = evaluate_call(macro_fn, argc, argv, env);
+  for (size_t i = 0; i < argc; i++) {
+    if (argv[i]) lval_free(argv[i]);
+  }
+  free(argv);
+  if (res.status != EVAL_OK) return res;
+  s_expression_t *expanded = sexp_from_lval(res.result);
+  lval_free(res.result);
+  if (!expanded) return eval_errf("macro: expansion is not compilable");
+  eval_result_t out = evaluate_single(expanded, env);
+  sexp_free_owned(expanded);
+  return out;
 }
 
 eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) {
@@ -140,6 +324,10 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
       special_form_fn sf = lookup_special_form(head_name);
       if (sf) {
         return sf(expr, env);
+      }
+      lval_t *binding = env_get_ref(env, head_name);
+      if (binding && binding->type == L_FUNCTION && binding->as.function.is_macro) {
+        return expand_macro_and_eval(binding, expr, env);
       }
     }
     size_t argc = expr->data.list.count - 1;
