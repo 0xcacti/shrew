@@ -992,6 +992,61 @@ static eval_result_t builtin_foldr(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_copy(acc));
 }
 
+static eval_result_t builtin_filter(size_t argc, lval_t **argv, env_t *env) {
+  if (argc != 2) return eval_errf("filter: expected 2 arguments, got %zu", argc);
+  lval_t *fn = argv[0];
+  lval_t *list = argv[1];
+  if (fn->type != L_FUNCTION && fn->type != L_SYMBOL && fn->type != L_NATIVE)
+    return eval_errf("filter: first argument must be a function or symbol");
+  if (list->type != L_CONS && list->type != L_NIL)
+    return eval_errf("filter: second argument must be a list, got %s", lval_type_name(list));
+  if (fn->type == L_SYMBOL) {
+    lval_t *binding = env_get_ref(env, fn->as.symbol.name);
+    if (!binding || (binding->type != L_FUNCTION && binding->type != L_NATIVE))
+      return eval_errf("filter: symbol '%s' is not bound to a function", fn->as.symbol.name);
+    fn = binding;
+  }
+
+  if (list->type == L_NIL) {
+    return eval_ok(lval_nil());
+  }
+
+  lval_t *head = NULL;
+  lval_t *tail = NULL;
+  lval_t *cur = list;
+  for (; cur->type == L_CONS; cur = cur->as.cons.cdr) {
+    lval_t *arg0 = cur->as.cons.car;
+    lval_t *call_argv[1] = { arg0 };
+    eval_result_t call_res = evaluate_call(fn, 1, call_argv, env);
+    if (call_res.status != EVAL_OK) {
+      if (head) lval_free(head);
+      return call_res;
+    }
+    if (call_res.result->type != L_BOOL) {
+      if (head) lval_free(head);
+      lval_free(call_res.result);
+      return eval_errf("filter: predicate must return a boolean");
+    }
+
+    if (call_res.result->as.boolean) {
+      lval_t *node = lval_cons(lval_copy(arg0), NULL);
+      if (!head) {
+        head = tail = node;
+      } else {
+        tail->as.cons.cdr = node;
+        tail = node;
+      }
+    }
+    lval_free(call_res.result);
+  }
+  if (cur->type != L_NIL) {
+    if (head) lval_free(head);
+    return eval_errf("filter: improper list");
+  }
+  if (tail) tail->as.cons.cdr = lval_nil();
+  return eval_ok(head ? head : lval_nil());
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -1058,7 +1113,7 @@ static const builtin_entry_t k_builtins[] = {
   { "reduce", builtin_reduce },
   { "foldl", builtin_foldl },
   { "foldr", builtin_foldr },
-  // { "filter", builtin_filter },
+  { "filter", builtin_filter },
   // { "error", builtin_error },
   // { "print", builtin_print },
   // { "newline", builtin_newline },

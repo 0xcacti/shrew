@@ -3755,3 +3755,113 @@ Test(functional_builtins, foldr_errors) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(functional_builtins, filter_builtin_number_predicate) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(equal (filter number? '(1 \"a\" 2 3 \"b\" 4)) '(1 2 3 4))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert(r.result->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, filter_lambda_positive) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr =
+      setup_input("(equal (filter (lambda (x) (> x 0)) '(-2 0 3 -1 4)) '(3 4))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert(r.result->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, filter_defined_symbol_predicate) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(define odd? (lambda (x) (= (mod x 2) 1)))"
+                                  "(equal (filter odd? '(1 2 3 4 5 6 7)) '(1 3 5 7))",
+                                  &p);
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  evaluator_result_free(&r1);
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert_eq(r2.result->type, L_BOOL);
+  cr_assert(r2.result->as.boolean);
+  evaluator_result_free(&r2);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, filter_empty_list) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(equal (filter (lambda (x) (> x 10)) '()) '())", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert(r.result->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, filter_improper_list_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(filter number? '(1 . 2))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, filter_predicate_must_return_bool) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(filter (lambda (x) x) '(1 2 3))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
