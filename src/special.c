@@ -75,13 +75,13 @@ static eval_result_t sf_quote(s_expression_t *list, env_t *env) {
 static eval_result_t sf_unquote(s_expression_t *list, env_t *env) {
   (void)env;
   (void)list;
-  return eval_errf("unquote is only valid inside a quote form");
+  return eval_errf("unquote-splicing is only valid inside a quasiquote");
 }
 
 static eval_result_t sf_unquote_splicing(s_expression_t *list, env_t *env) {
   (void)env;
   (void)list;
-  return eval_errf("unquote-splicing is only valid inside a quote form");
+  return eval_errf("unquote-splicing is only valid inside a quasiquote");
 }
 
 bool is_simple_form(const s_expression_t *e, const char *tag, const s_expression_t **out_arg) {
@@ -96,8 +96,8 @@ bool is_simple_form(const s_expression_t *e, const char *tag, const s_expression
 
 static lval_t *make_simple_list(const char *sym, lval_t *v) {
   lval_t *s = lval_intern(sym);
-  lval_t *p = lval_cons(s, lval_nil());
-  return lval_cons(v, p);
+  lval_t *p = lval_cons(v, lval_nil());
+  return lval_cons(s, p);
 }
 
 // forward declaration

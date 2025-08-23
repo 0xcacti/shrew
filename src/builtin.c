@@ -381,14 +381,12 @@ static bool deep_eq_helper(lval_t *a, lval_t *b) {
     }
     return (memcmp(a->as.string.ptr, b->as.string.ptr, a->as.string.len) == 0);
   case L_CONS:
-    if (a->as.cons.car == NULL && b->as.cons.car == NULL) {
-      return true;
-    }
-    if (a->as.cons.car == NULL || b->as.cons.car == NULL) {
-      return false;
-    }
     return deep_eq_helper(a->as.cons.car, b->as.cons.car) &&
            deep_eq_helper(a->as.cons.cdr, b->as.cons.cdr);
+  case L_NATIVE:
+    return (strcmp(a->as.native.name, b->as.native.name) == 0);
+  case L_FUNCTION:
+    return false;
   default:
     return (a == b);
   }
