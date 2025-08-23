@@ -184,7 +184,7 @@ Test(parser_tests, it_parses_empty_and_nested_empty_lists) {
 Test(parser_tests, it_handles_many_elements) {
   char buf[256] = "(";
   for (int i = 0; i < 40; i++)
-    strcat(buf, " a"); // "( a a … )"
+    strcat(buf, " a");
   strcat(buf, ")");
 
   lexer_t lx = lexer_new(buf);
@@ -394,7 +394,6 @@ Test(parser_test, parses_two_forms) {
   cr_assert_eq(p.error_count, 0, "Parser should have no errors");
   cr_assert_eq(pr.count, 2, "Should parse exactly 2 top-level expressions");
 
-  /* Basic structural sanity */
   cr_assert_eq(pr.expressions[0]->type, NODE_LIST);
   cr_assert_eq(pr.expressions[1]->type, NODE_LIST);
 

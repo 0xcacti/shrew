@@ -139,7 +139,6 @@ s_expression_t *parser_parse_list(parser_t *parser) {
 
       parser_next(parser);
 
-      // added to make sure we correctly handle error on multiple dots
       if (parser->current_token.type == TOKEN_DOT) {
         continue;
       }
@@ -284,7 +283,6 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
     return NULL;
   }
 
-  // make quote
   atom_t quote_atom = { 0 };
   quote_atom.type = ATOM_SYMBOL;
   switch (token_type) {
@@ -319,7 +317,6 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
   quote_symbol->type = NODE_ATOM;
   quote_symbol->data.atom = quote_atom;
 
-  // make elements that will go into the list
   s_expression_t **elements = malloc(2 * sizeof(*elements));
   if (!elements) {
     perror("malloc");
@@ -328,7 +325,6 @@ s_expression_t *parser_parse_quote_family(parser_t *parser) {
   elements[0] = quote_symbol;
   elements[1] = quoted;
 
-  // make the list
   s_expression_t *list_sexp = malloc(sizeof(s_expression_t));
   if (!list_sexp) {
     perror("malloc");

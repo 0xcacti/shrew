@@ -500,7 +500,6 @@ static eval_result_t sf_defmacro(s_expression_t *list, env_t *env) {
   return eval_ok(lval_intern(name));
 }
 
-// Lookups
 typedef struct {
   const char *name;
   special_form_fn fn;

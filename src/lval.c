@@ -9,7 +9,7 @@
 lval_t *lval_num(double x) {
   lval_t *v = malloc(sizeof(lval_t));
   if (!v) return NULL;
-  v->mark = 0; // 0 for now when created
+  v->mark = 0;
   v->type = L_NUM;
   v->as.number = x;
   return v;
@@ -18,7 +18,7 @@ lval_t *lval_num(double x) {
 lval_t *lval_bool(bool b) {
   lval_t *v = malloc(sizeof(lval_t));
   if (!v) return NULL;
-  v->mark = 0; // 0 for now when created
+  v->mark = 0;
   v->type = L_BOOL;
   v->as.boolean = b;
   return v;
@@ -27,7 +27,7 @@ lval_t *lval_bool(bool b) {
 lval_t *lval_string_copy(const char *s, size_t len) {
   lval_t *v = malloc(sizeof(lval_t));
   if (!v) return NULL;
-  v->mark = 0; // 0 for now when created
+  v->mark = 0;
   v->type = L_STRING;
   v->as.string.len = len;
   v->as.string.ptr = malloc(len + 1);

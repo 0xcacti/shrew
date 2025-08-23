@@ -15,10 +15,10 @@ typedef enum {
 typedef struct atom {
   atom_type_t type;
   union {
-    char *symbol;   // For ATOM_SYMBOL
-    double number;  // For ATOM_NUMBER
-    char *string;   // For ATOM_STRING
-    bool boolean;    // For ATOM_BOOLEAN (0 or 1)
+    char *symbol;   
+    double number;  
+    char *string;   
+    bool boolean;   
   } value;
 } atom_t;
 

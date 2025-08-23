@@ -2330,7 +2330,6 @@ Test(boolean_tests, or_non_boolean_error) {
   symbol_intern_free_all();
 }
 
-// CONS tests
 Test(list_tests, cons_creates_pair) {
   symbol_intern_init();
   env_t env;
@@ -2365,7 +2364,6 @@ Test(list_tests, cons_wrong_arg_count) {
   symbol_intern_free_all();
 }
 
-// CAR tests
 Test(list_tests, car_gets_first_element) {
   symbol_intern_init();
   env_t env;
@@ -2418,7 +2416,6 @@ Test(list_tests, car_non_cons_error) {
   symbol_intern_free_all();
 }
 
-// CDR tests
 Test(list_tests, cdr_gets_rest) {
   symbol_intern_init();
   env_t env;
@@ -2453,7 +2450,6 @@ Test(list_tests, cdr_non_cons_error) {
   symbol_intern_free_all();
 }
 
-// LIST tests
 Test(list_tests, list_creates_list) {
   symbol_intern_init();
   env_t env;
@@ -2487,7 +2483,6 @@ Test(list_tests, list_empty_creates_nil) {
   symbol_intern_free_all();
 }
 
-// LENGTH tests
 Test(list_tests, length_counts_elements) {
   symbol_intern_init();
   env_t env;
@@ -2541,7 +2536,6 @@ Test(list_tests, length_non_cons_error) {
   symbol_intern_free_all();
 }
 
-// APPEND tests
 Test(list_tests, append_combines_lists) {
   symbol_intern_init();
   env_t env;
@@ -2576,7 +2570,6 @@ Test(list_tests, append_wrong_arg_count) {
   symbol_intern_free_all();
 }
 
-// REVERSE tests
 Test(list_tests, reverse_reverses_list) {
   symbol_intern_init();
   env_t env;

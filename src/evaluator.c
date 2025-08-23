@@ -249,7 +249,6 @@ eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) 
     return bf(argc, argv, env);
   }
 
-  // We must have L_FUNCTION here
   if (argc != fn->as.function.param_count) {
     return eval_errf("Function expects %zu arguments, got %zu", fn->as.function.param_count, argc);
   }

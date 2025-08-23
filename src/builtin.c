@@ -368,7 +368,7 @@ static bool deep_eq_helper(lval_t *a, lval_t *b) {
   }
   switch (a->type) {
   case L_NIL:
-    return true; // Both are nil, so they are equal.
+    return true;
   case L_NUM:
     return (a->as.number == b->as.number);
   case L_BOOL:
