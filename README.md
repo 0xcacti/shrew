@@ -33,7 +33,7 @@ it's always good to write a lisp when learning a new language.
             - [ ] unquote-splicing
         - [x] if
         - [x] cond
-        - [ ] begin
+        - [x] begin
         - [ ] defmacro 
     - [x] Implement builtins
         - [x] Arithmetic
