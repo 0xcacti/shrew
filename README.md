@@ -13,7 +13,7 @@ it's always good to write a lisp when learning a new language.
     - [x] Implement parsing of atoms 
     - [x] Implement parsing of lists
 - [x] Implement hashtable
-- [ ] Implement evaluator 
+- [x] Implement evaluator 
     - [x] Implement symbol interning 
     - [x] Implement lvals 
     - [x] Implement env 
@@ -34,7 +34,7 @@ it's always good to write a lisp when learning a new language.
         - [x] if
         - [x] cond
         - [x] begin
-        - [ ] defmacro 
+        - [x] defmacro 
     - [x] Implement builtins
         - [x] Arithmetic
             - [x] +

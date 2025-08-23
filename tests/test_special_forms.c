@@ -1016,3 +1016,28 @@ Test(macros, twice_quasiquote) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(macros, macro_unless) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr =
+      setup_input("(begin "
+                  "  (defmacro unless (cond then else) `(if (not ,cond) ,then ,else)) "
+                  "  (list (equal (unless #f 1 2) 1) "
+                  "        (equal (unless #t 1 2) 2)))",
+                  &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  lval_t *a = r.result->as.cons.car;
+  lval_t *b = r.result->as.cons.cdr->as.cons.car;
+  cr_assert(a->type == L_BOOL && a->as.boolean);
+  cr_assert(b->type == L_BOOL && b->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
