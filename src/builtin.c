@@ -1047,6 +1047,17 @@ static eval_result_t builtin_filter(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(head ? head : lval_nil());
 }
 
+static eval_result_t builtin_error(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 1) {
+    return eval_errf("error: expected exactly 1 argument, got %zu", argc);
+  }
+  if (argv[0]->type != L_STRING) {
+    return eval_errf("error: expected argument of type string");
+  }
+  return eval_errf("error: %.*s", (int)argv[0]->as.string.len, argv[0]->as.string.ptr);
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -1114,7 +1125,7 @@ static const builtin_entry_t k_builtins[] = {
   { "foldl", builtin_foldl },
   { "foldr", builtin_foldr },
   { "filter", builtin_filter },
-  // { "error", builtin_error },
+  { "error", builtin_error },
   // { "print", builtin_print },
   // { "newline", builtin_newline },
   // { "gensym", builtin_gensym },

@@ -3865,3 +3865,20 @@ Test(functional_builtins, filter_predicate_must_return_bool) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(functional_builtins, builtin_error_correctly_formats) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(error \"manually thrown error\n\")", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  cr_assert_str_eq(r.error_message, "error: manually thrown error\n");
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
