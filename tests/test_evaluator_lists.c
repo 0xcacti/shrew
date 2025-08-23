@@ -1,3 +1,4 @@
+#include "builtin.h"
 #include "env.h"
 #include "evaluator.h"
 #include "lexer.h"
@@ -31,6 +32,7 @@ Test(evaluator_test, evaluate_empty_list) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("()", &parser);
@@ -55,6 +57,7 @@ Test(evaluator_lists, dotted_list_call_errors) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("(+ 1 . 2)", &parser);
@@ -78,6 +81,7 @@ Test(evaluator_lists, head_is_number_errors) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("(1 2 3)", &parser);
@@ -101,6 +105,7 @@ Test(evaluator_lists, head_is_list_errors) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("((meow-fn 1 2) 3)", &parser);
@@ -124,6 +129,7 @@ Test(evaluator_lists, unknown_function_symbol_errors) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("(does-not-exist 1)", &parser);
@@ -147,6 +153,7 @@ Test(evaluator_lists, nested_calls_evaluate_arguments) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("(+ 1 (* 2 3) (- 10 4) (/ 9 3))", &parser);
@@ -171,6 +178,7 @@ Test(evaluator_lists, evaluates_user_defined_functions_simple) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
 
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define add2 (lambda (x) (+ x 2)))"
@@ -204,6 +212,7 @@ Test(evaluator_lists, evaluates_user_defined_functions_closure) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
 
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define make-adder (lambda (a) (lambda (x) (+ x a))))"
@@ -237,6 +246,7 @@ Test(evaluator_lists, evaluates_user_defined_functions_multi_body) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define add2 (lambda (x) 0 (+ x 2)))"
                                   " (add2 14)",
@@ -247,6 +257,9 @@ Test(evaluator_lists, evaluates_user_defined_functions_multi_body) {
   evaluator_result_free(&r0);
 
   eval_result_t r1 = evaluate_single(pr.expressions[1], &env);
+  if (r1.status != EVAL_OK) {
+    fprintf(stderr, "Error evaluating call: %s\n", r1.error_message);
+  }
   cr_assert_eq(r1.status, EVAL_OK);
   cr_assert_not_null(r1.result);
   cr_assert(is_num(r1.result, 16.0));
@@ -264,6 +277,7 @@ Test(evaluator_lists, evaluates_user_defined_functions_shadowing) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define a 5)"
                                   " (define make (lambda (a) (lambda (x) (+ a x))))"
@@ -296,6 +310,7 @@ Test(evaluator_lists, evaluates_user_defined_functions_three_level_closure) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define make2 (lambda (a) (lambda (b) (lambda (x) (+ x a b)))))"
                                   " (define add1 (make2 1))"

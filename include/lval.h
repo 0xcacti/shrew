@@ -12,6 +12,7 @@ typedef enum {
   L_SYMBOL,
   L_CONS,
   L_FUNCTION,
+  L_NATIVE
 } ltype_t;
 
 typedef struct lval {
@@ -30,6 +31,10 @@ typedef struct lval {
       size_t body_count;
       struct env *closure;
     } function;
+    struct {
+      void *fn; 
+      const char *name;
+    } native;
   } as;
 } lval_t;
 
@@ -42,6 +47,7 @@ lval_t *lval_intern(const char *name);
 lval_t *lval_nil(void);
 lval_t *lval_cons(lval_t *car, lval_t *cdr);
 lval_t *lval_function(char **params, size_t param_count, s_expression_t **body, size_t body_count, struct env *closure);
+lval_t *lval_native(void *fn, const char *name);
 
 const char *lval_type_name(const lval_t *v);
 void lval_print(const lval_t *v);

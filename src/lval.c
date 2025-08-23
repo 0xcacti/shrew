@@ -93,6 +93,16 @@ lval_t *lval_function(char **params,
   return v;
 }
 
+lval_t *lval_native(void *fn, const char *name) {
+  lval_t *v = malloc(sizeof(lval_t));
+  if (!v) return NULL;
+  v->mark = 0;
+  v->type = L_NATIVE;
+  v->as.native.fn = fn;
+  v->as.native.name = name;
+  return v;
+}
+
 const char *lval_type_name(const lval_t *v) {
   switch (v->type) {
   case L_NUM:
@@ -109,6 +119,8 @@ const char *lval_type_name(const lval_t *v) {
     return "cons";
   case L_FUNCTION:
     return "function";
+  case L_NATIVE:
+    return "builtin";
   default:
     return "unknown";
   }
@@ -146,6 +158,13 @@ void lval_print(const lval_t *v) {
     break;
   case L_FUNCTION:
     printf("<function>");
+    break;
+  case L_NATIVE:
+    if (v->as.native.name) {
+      printf("<builtin:%s>", v->as.native.name);
+    } else {
+      printf("<builtin>");
+    }
     break;
   default:
     printf("<unknown>");
@@ -248,6 +267,10 @@ lval_t *lval_copy(const lval_t *v) {
     copy->as.function.closure = v->as.function.closure;
     if (copy->as.function.closure) env_retain(copy->as.function.closure);
     break;
+  case L_NATIVE:
+    copy->as.native.fn = v->as.native.fn;
+    copy->as.native.name = v->as.native.name;
+    break;
   default:
     fprintf(stderr, "lval_copy: unsupported type %d\n", (int)v->type);
     free(copy);
@@ -279,6 +302,7 @@ void lval_free(lval_t *v) {
   case L_NIL:
   case L_NUM:
   case L_BOOL:
+  case L_NATIVE:
   default:
     break;
   }

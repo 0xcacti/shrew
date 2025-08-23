@@ -57,16 +57,22 @@ eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) 
   if (!fn) return eval_errf("Unknown function");
   if (fn->type == L_SYMBOL) {
     const char *name = fn->as.symbol.name;
-    builtin_fn bf = lookup_builtin(name);
-    if (bf) return bf(argc, argv, env);
     lval_t *binding = env_get_ref(env, name);
     if (!binding) return eval_errf("Unknown function: %s", name);
     fn = binding;
   }
-  if (fn->type != L_FUNCTION) {
+
+  if (fn->type != L_FUNCTION && fn->type != L_NATIVE) {
     return eval_errf("Expected a function, got: %s", lval_type_name(fn));
   }
 
+  if (fn->type == L_NATIVE) {
+    builtin_fn bf = (builtin_fn)fn->as.native.fn;
+    if (!bf) return eval_errf("internal: null builtin");
+    return bf(argc, argv, env);
+  }
+
+  // We must have L_FUNCTION here
   if (argc != fn->as.function.param_count) {
     return eval_errf("Function expects %zu arguments, got %zu", fn->as.function.param_count, argc);
   }

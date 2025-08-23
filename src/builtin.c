@@ -922,8 +922,9 @@ builtin_fn lookup_builtin(const char *name) {
   return NULL;
 }
 
-// void env_add_builtins(env_t *env) {
-//   for (size_t i = 0; i < sizeof k_builtins / sizeof k_builtins[0]; i++) {
-//     lval_t *fn = lval_function(k_builtins[i].fn, k_builtins[i].name);
-//   }
-// }
+void env_add_builtins(env_t *env) {
+  for (size_t i = 0; i < sizeof k_builtins / sizeof k_builtins[0]; i++) {
+    lval_t *fn = lval_native(k_builtins[i].fn, k_builtins[i].name);
+    env_define(env, k_builtins[i].name, fn);
+  }
+}
