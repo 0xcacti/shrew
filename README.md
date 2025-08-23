@@ -92,9 +92,9 @@ it's always good to write a lisp when learning a new language.
             - [x] string->symbol
         - [ ] Functional 
             - [x] apply
-            - [ ] map
-            - [ ] filter
+            - [x] map
             - [ ] reduce
+            - [ ] filter
             - [ ] fold
             - [ ] eval
             - [ ] load

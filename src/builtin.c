@@ -892,6 +892,54 @@ static eval_result_t builtin_map(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(head);
 }
 
+static eval_result_t builtin_reduce(size_t argc, lval_t **argv, env_t *env) {
+  if (argc != 2 && argc != 3) return eval_errf("reduce: expected 2 or 3 arguments, got %zu", argc);
+  lval_t *fn = argv[0];
+  bool has_init = (argc == 3);
+  lval_t *init = has_init ? argv[1] : NULL;
+  lval_t *list = has_init ? argv[2] : argv[1];
+
+  if (fn->type != L_FUNCTION && fn->type != L_SYMBOL && fn->type != L_NATIVE)
+    return eval_errf("reduce: first argument must be a function or symbol");
+  if (list->type != L_CONS && list->type != L_NIL)
+    return eval_errf("reduce: list argument must be a list, got %s", lval_type_name(list));
+
+  if (fn->type == L_SYMBOL) {
+    lval_t *binding = env_get_ref(env, fn->as.symbol.name);
+    if (!binding || (binding->type != L_FUNCTION && binding->type != L_NATIVE))
+      return eval_errf("reduce: symbol '%s' is not bound to a function", fn->as.symbol.name);
+    fn = binding;
+  }
+  if (list->type == L_NIL) {
+    if (has_init) return eval_ok(lval_copy(init));
+    return eval_errf("reduce: empty list with no initial value");
+  }
+
+  lval_t *acc = has_init ? lval_copy(init) : lval_copy(list->as.cons.car);
+  bool acc_owned = false;
+  lval_t *cur = has_init ? list : list->as.cons.cdr;
+
+  for (; cur->type == L_CONS; cur = cur->as.cons.cdr) {
+    lval_t *call_argv[2] = { acc, cur->as.cons.car };
+    eval_result_t call_res = evaluate_call(fn, 2, call_argv, env);
+    if (call_res.status != EVAL_OK) {
+      if (acc_owned) lval_free(acc);
+      return call_res;
+    }
+    if (acc_owned) lval_free(acc);
+    acc = call_res.result;
+    acc_owned = true;
+  }
+
+  if (cur->type != L_NIL) {
+    if (acc_owned) lval_free(acc);
+    return eval_errf("reduce: improper list");
+  }
+
+  if (acc_owned) return eval_ok(acc);
+  return eval_ok(lval_copy(acc));
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -955,8 +1003,8 @@ static const builtin_entry_t k_builtins[] = {
   // functional
   { "apply", builtin_apply },
   { "map", builtin_map },
+  { "reduce", builtin_reduce },
   // { "filter", builtin_filter },
-  // { "reduce", builtin_reduce },
   // { "fold", builtin_fold },
   // { "error", builtin_error },
   // { "print", builtin_print },
