@@ -794,7 +794,7 @@ static eval_result_t builtin_apply(size_t argc, lval_t **argv, env_t *env) {
   }
 
   lval_t *fn = argv[0];
-  if (fn->type != L_FUNCTION && fn->type != L_SYMBOL) {
+  if (fn->type != L_FUNCTION && fn->type != L_SYMBOL && fn->type != L_NATIVE) {
     return eval_errf("apply: first argument must be a function or symbol");
   }
 
