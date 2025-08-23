@@ -21,7 +21,7 @@ it's always good to write a lisp when learning a new language.
     - [x] Implement list evaluation 
     - [x] Implement user defined functions
     - [x] Implement closures
-    - [ ] Implement evaluate multiple expressions
+    - [x] Implement evaluate multiple expressions
     - [ ] Implement special forms
         - [x] define
         - [x] lambda
@@ -34,7 +34,7 @@ it's always good to write a lisp when learning a new language.
         - [ ] begin
         - [ ] cond
         - [ ] defmacro 
-    - [ ] Implement builtins
+    - [x] Implement builtins
         - [x] Arithmetic
             - [x] +
             - [x] -
@@ -90,7 +90,7 @@ it's always good to write a lisp when learning a new language.
             - [x] number->string
             - [x] symbol->string
             - [x] string->symbol
-        - [ ] Functional 
+        - [x] Functional 
             - [x] apply
             - [x] map
             - [x] reduce
@@ -100,7 +100,7 @@ it's always good to write a lisp when learning a new language.
             - [x] gensym
             - [x] error
             - [x] eval
-            - [ ] load
+            - [x] load
         - [x] I/O
             - [x] print
             - [x] newline
@@ -108,7 +108,3 @@ it's always good to write a lisp when learning a new language.
 - [ ] Implement CLI tool
     - [ ] Repl 
     - [ ] File execution 
-
-- [ ] Decide on memory management strategy, 
-    - free all tokens, lexer, etc at the end
-    - free parser and have it free lexer and have it free tokens

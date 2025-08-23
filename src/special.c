@@ -178,6 +178,30 @@ static eval_result_t sf_lambda(s_expression_t *list, env_t *env) {
   return eval_ok(fn);
 }
 
+static eval_result_t sf_if(s_expression_t *list, env_t *env) {
+  if (list->data.list.tail != NULL) return eval_errf("if: cannot have dotted arguments");
+  if (list->data.list.count < 3 || list->data.list.count > 4)
+    return eval_errf("if requires two or three arguments, got %zu", list->data.list.count - 1);
+  s_expression_t *cond_expr = list->data.list.elements[1];
+  s_expression_t *then_expr = list->data.list.elements[2];
+  s_expression_t *else_expr = NULL;
+  if (list->data.list.count == 4) else_expr = list->data.list.elements[3];
+
+  eval_result_t cond_res = evaluate_single(cond_expr, env);
+  if (cond_res.status != EVAL_OK) return cond_res;
+  if (cond_res.result->type != L_BOOL)
+    return eval_errf("if: condition did not evaluate to a boolean");
+
+  bool cond = cond_res.result->as.boolean;
+  if (cond) {
+    return evaluate_single(then_expr, env);
+  } else if (else_expr) {
+    return evaluate_single(else_expr, env);
+  } else {
+    return eval_ok(lval_nil());
+  }
+}
+
 // Lookups
 typedef struct {
   const char *name;
@@ -190,7 +214,7 @@ static const special_entry_t k_specials[] = {
   { "unquote", sf_unquote },
   { "define", sf_define },
   { "lambda", sf_lambda },
-  // {"if",     sf_if},
+  { "if",     sf_if},
   // {"define", sf_define},
   // {"begin",  sf_begin},
 };

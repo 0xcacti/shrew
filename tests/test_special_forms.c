@@ -1,3 +1,4 @@
+#include "builtin.h"
 #include "env.h"
 #include "evaluator.h"
 #include "lexer.h"
@@ -571,6 +572,87 @@ Test(define_tests, define_binds_quoted_list_single_parser) {
   cr_assert_eq(cdr(rest)->type, L_NIL);
 
   evaluator_result_free(&r2);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, if_basic) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(list (if #t 1 2) (if #f 1 2))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  lval_t *a = r.result->as.cons.car;
+  lval_t *b = r.result->as.cons.cdr->as.cons.car;
+  cr_assert_eq(a->type, L_NUM);
+  cr_assert_float_eq(a->as.number, 1.0, 1e-10);
+  cr_assert_eq(b->type, L_NUM);
+  cr_assert_float_eq(b->as.number, 2.0, 1e-10);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, if_no_else_returns_nil) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(list (if #t 1) (if #f 1))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  lval_t *a = r.result->as.cons.car;
+  lval_t *b = r.result->as.cons.cdr->as.cons.car;
+  cr_assert_eq(a->type, L_NUM);
+  cr_assert_eq(b->type, L_NIL);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, if_condition_must_be_bool) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(if 1 'a 'b)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, if_is_lazy) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr =
+      setup_input("(list (if #t 1 (error \"boom\")) (if #f (error \"boom\") 2))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  lval_t *a = r.result->as.cons.car;
+  lval_t *b = r.result->as.cons.cdr->as.cons.car;
+  cr_assert_eq(a->type, L_NUM);
+  cr_assert_float_eq(a->as.number, 1.0, 1e-10);
+  cr_assert_eq(b->type, L_NUM);
+  cr_assert_float_eq(b->as.number, 2.0, 1e-10);
+  evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
   env_destroy(&env);
