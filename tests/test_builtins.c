@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "symbol.h"
 #include <criterion/criterion.h>
+#include <criterion/redirect.h>
 #include <math.h>
 #include <stdbool.h>
 
@@ -3877,6 +3878,99 @@ Test(functional_builtins, builtin_error_correctly_formats) {
   cr_assert_eq(r.status, EVAL_ERR);
   cr_assert_str_eq(r.error_message, "error: manually thrown error\n");
   evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(io_builtins, print_empty, .init = cr_redirect_stdout) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(print)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  evaluator_result_free(&r);
+  cr_assert_stdout_eq_str("\n");
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(io_builtins, print_mixed_args, .init = cr_redirect_stdout) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(print 1 \"a\" 'foo)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  evaluator_result_free(&r);
+  cr_assert_stdout_eq_str("1 \"a\" foo\n");
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(io_builtins, newline_once, .init = cr_redirect_stdout) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(newline)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  evaluator_result_free(&r);
+  fflush(stdout);
+  cr_assert_stdout_eq_str("\n");
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(io_builtins, newline_twice, .init = cr_redirect_stdout) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(newline)(newline)", &p);
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  evaluator_result_free(&r1);
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  evaluator_result_free(&r2);
+  fflush(stdout);
+  cr_assert_stdout_eq_str("\n\n");
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(io_builtins, multiple_prints, .init = cr_redirect_stdout) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(print 1)(print 2 3)", &p);
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  evaluator_result_free(&r1);
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  evaluator_result_free(&r2);
+  cr_assert_stdout_eq_str("1\n2 3\n");
   parse_result_free(&pr);
   parser_free(&p);
   env_destroy(&env);

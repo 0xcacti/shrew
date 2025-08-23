@@ -1058,6 +1058,30 @@ static eval_result_t builtin_error(size_t argc, lval_t **argv, env_t *env) {
   return eval_errf("error: %.*s", (int)argv[0]->as.string.len, argv[0]->as.string.ptr);
 }
 
+static eval_result_t builtin_print(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  for (size_t i = 0; i < argc; i++) {
+    lval_print(argv[i]);
+    if (i + 1 < argc) {
+      putchar(' ');
+    }
+  }
+  putchar('\n');
+  if (fflush(stdout) == EOF) {
+    return eval_errf("print: I/O error");
+  }
+
+  return eval_ok(lval_nil());
+}
+
+static eval_result_t builtin_newline(size_t argc, lval_t **argv, env_t *env) {
+  (void)argc;
+  (void)argv;
+  (void)env;
+  putchar('\n');
+  return eval_ok(lval_nil());
+}
+
 typedef struct {
   const char *name;
   builtin_fn fn;
@@ -1126,11 +1150,13 @@ static const builtin_entry_t k_builtins[] = {
   { "foldr", builtin_foldr },
   { "filter", builtin_filter },
   { "error", builtin_error },
-  // { "print", builtin_print },
-  // { "newline", builtin_newline },
   // { "gensym", builtin_gensym },
   // { "eval", builtin_eval },
   // { "load", builtin_load },
+  
+  // I/O
+  { "print", builtin_print },
+  { "newline", builtin_newline },
 
 };
 // clang-format on
