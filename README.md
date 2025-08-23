@@ -98,7 +98,7 @@ it's always good to write a lisp when learning a new language.
             - [x] filter
             - [x] gensym
             - [x] error
-            - [ ] eval
+            - [x] eval
             - [ ] load
         - [x] I/O
             - [ ] print
