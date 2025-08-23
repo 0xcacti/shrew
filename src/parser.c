@@ -21,6 +21,19 @@ static void grow_error_capacity(parser_t *parser) {
   parser->error_capacity = new_cap;
 }
 
+bool sexp_is_symbol(const s_expression_t *sexp, const char **out_name) {
+  if (sexp->type != NODE_ATOM) return false;
+  if (sexp->data.atom.type != ATOM_SYMBOL) return false;
+  if (out_name) *out_name = sexp->data.atom.value.symbol;
+  return true;
+}
+
+bool sexp_is_symbol_name(const s_expression_t *e, const char *name) {
+  const char *sym_name;
+  if (!sexp_is_symbol(e, &sym_name)) return false;
+  return strcmp(sym_name, name) == 0;
+}
+
 void parser_add_error(parser_t *parser, const char *fmt, ...) {
   if (parser->error_count + 1 > parser->error_capacity) {
     grow_error_capacity(parser);

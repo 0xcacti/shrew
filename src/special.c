@@ -78,6 +78,178 @@ static eval_result_t sf_unquote(s_expression_t *list, env_t *env) {
   return eval_errf("unquote is only valid inside a quote form");
 }
 
+static eval_result_t sf_unquote_splicing(s_expression_t *list, env_t *env) {
+  (void)env;
+  (void)list;
+  return eval_errf("unquote-splicing is only valid inside a quote form");
+}
+
+bool is_simple_form(const s_expression_t *e, const char *tag, const s_expression_t **out_arg) {
+  if (!e || e->type != NODE_LIST) return false;
+  if (e->data.list.tail != NULL) return false;
+  if (e->data.list.count != 2) return false;
+  const s_expression_t *first = e->data.list.elements[0];
+  if (!sexp_is_symbol_name(first, tag)) return false;
+  if (out_arg) *out_arg = e->data.list.elements[1];
+  return true;
+}
+
+static lval_t *make_simple_list(const char *sym, lval_t *v) {
+  lval_t *s = lval_intern(sym);
+  lval_t *p = lval_cons(s, lval_nil());
+  return lval_cons(v, p);
+}
+
+// forward declaration
+static eval_result_t qq_expand_any(const s_expression_t *e, env_t *env, int depth);
+
+static eval_result_t qq_expand_list(const s_expression_t *list, env_t *env, int depth) {
+  lval_t *tail = NULL;
+  if (list->data.list.tail) {
+    const s_expression_t *arg = NULL;
+    if (is_simple_form(list->data.list.tail, "unquote", &arg) && depth == 1) {
+      eval_result_t r = evaluate_single((s_expression_t *)arg, env);
+      if (r.status != EVAL_OK) return r;
+      tail = r.result;
+    } else if (is_simple_form(list->data.list.tail, "unquote-splicing", &arg) && depth == 1) {
+      return eval_errf("unquote-splicing not allowed in dotted tail");
+    } else if (is_simple_form(list->data.list.tail, "quasiquote", &arg)) {
+      eval_result_t inner = qq_expand_any(arg, env, depth + 1);
+      if (inner.status != EVAL_OK) return inner;
+      tail = make_simple_list("quasiquote", inner.result);
+    } else {
+      eval_result_t r = qq_expand_any(list->data.list.tail, env, depth);
+      if (r.status != EVAL_OK) return r;
+      tail = r.result;
+    }
+  } else {
+    tail = lval_nil();
+  }
+
+  for (ssize_t i = (ssize_t)list->data.list.count - 1; i >= 0; --i) {
+    const s_expression_t *elem = list->data.list.elements[i];
+    const s_expression_t *arg = NULL;
+    if (is_simple_form(elem, "unquote", &arg)) {
+      if (depth == 1) {
+        eval_result_t r = evaluate_single((s_expression_t *)arg, env);
+        if (r.status != EVAL_OK) {
+          lval_free(tail);
+          return r;
+        }
+        tail = lval_cons(r.result, tail);
+      } else {
+        eval_result_t inner = qq_expand_any(arg, env, depth - 1);
+        if (inner.status != EVAL_OK) {
+          lval_free(tail);
+          return inner;
+        }
+        lval_t *form = make_simple_list("unquote", inner.result);
+        tail = lval_cons(form, tail);
+      }
+      continue;
+    }
+
+    if (is_simple_form(elem, "unquote-splicing", &arg)) {
+      if (depth == 1) {
+        eval_result_t r = evaluate_single((s_expression_t *)arg, env);
+        if (r.status != EVAL_OK) {
+          lval_free(tail);
+          return r;
+        }
+        if (r.result->type != L_CONS && r.result->type != L_NIL) {
+          lval_free(tail);
+          lval_free(r.result);
+          return eval_errf("unquote-splicing: expected list");
+        }
+        size_t n = 0;
+        lval_t *cur = r.result;
+        while (cur->type == L_CONS) {
+          n++;
+          cur = cur->as.cons.cdr;
+        }
+        if (cur->type != L_NIL) {
+          lval_free(tail);
+          lval_free(r.result);
+          return eval_errf("unquote-splicing: expected proper list");
+        }
+        if (n) {
+          lval_t **elems = malloc(sizeof(lval_t *) * n);
+          if (!elems) {
+            lval_free(tail);
+            lval_free(r.result);
+            return eval_errf("oom");
+          }
+          size_t k = 0;
+          for (lval_t *x = r.result; x->type == L_CONS; x = x->as.cons.cdr)
+            elems[k++] = x->as.cons.car;
+          for (ssize_t j = (ssize_t)n - 1; j >= 0; --j)
+            tail = lval_cons(lval_copy(elems[j]), tail);
+          free(elems);
+        }
+        lval_free(r.result);
+      } else {
+        eval_result_t inner = qq_expand_any(arg, env, depth - 1);
+        if (inner.status != EVAL_OK) {
+          lval_free(tail);
+          return inner;
+        }
+        lval_t *form = make_simple_list("unquote-splicing", inner.result);
+        tail = lval_cons(form, tail);
+      }
+      continue;
+    }
+
+    if (is_simple_form(elem, "quasiquote", &arg)) {
+      eval_result_t inner = qq_expand_any(arg, env, depth + 1);
+      if (inner.status != EVAL_OK) {
+        lval_free(tail);
+        return inner;
+      }
+      lval_t *form = make_simple_list("quasiquote", inner.result);
+      tail = lval_cons(form, tail);
+      continue;
+    }
+
+    eval_result_t v = qq_expand_any(elem, env, depth);
+    if (v.status != EVAL_OK) {
+      lval_free(tail);
+      return v;
+    }
+    tail = lval_cons(v.result, tail);
+  }
+  return eval_ok(tail);
+}
+
+static eval_result_t qq_expand_any(const s_expression_t *e, env_t *env, int depth) {
+  if (e->type == NODE_ATOM) {
+    return ast_atom_to_quoted_lval(&e->data.atom);
+  }
+  if (e->type == NODE_LIST) {
+    const s_expression_t *arg = NULL;
+    if (is_simple_form(e, "quasiquote", &arg)) {
+      eval_result_t inner = qq_expand_any(arg, env, depth + 1);
+      if (inner.status != EVAL_OK) return inner;
+      lval_t *form = make_simple_list("quasiquote", inner.result);
+      return eval_ok(form);
+    }
+    if (e->data.list.count == 0 && e->data.list.tail == NULL) {
+      return eval_ok(lval_nil());
+    }
+    return qq_expand_list(e, env, depth);
+  }
+  return eval_errf("quasiquote: unknown node type");
+}
+
+static eval_result_t sf_quasiquote(s_expression_t *list, env_t *env) {
+  if (list->data.list.tail != NULL) return eval_errf("quasiquote: cannot have dotted arguments");
+  if (list->data.list.count != 2) {
+    return eval_errf("quasiquote requires exactly one argument, got %zu",
+                     list->data.list.count - 1);
+  }
+  const s_expression_t *arg = list->data.list.elements[1];
+  return qq_expand_any(arg, env, 1);
+}
+
 static eval_result_t sf_define(s_expression_t *list, env_t *env) {
   if (list->data.list.count != 3) {
     return eval_errf("define requires exactly two arguments, got %zu", list->data.list.count - 1);
@@ -257,12 +429,15 @@ typedef struct {
 static const special_entry_t k_specials[] = {
   { "quote", sf_quote }, 
   { "unquote", sf_unquote },
+  { "unquote-splicing", sf_unquote_splicing },
+  { "quasiquote", sf_quasiquote },
   { "define", sf_define },
   { "set", sf_set },
   { "lambda", sf_lambda },
   { "if",     sf_if },
   { "cond", sf_cond },
   { "begin",  sf_begin },
+
   // { "defmacro", sf_defmacro }
 
 };

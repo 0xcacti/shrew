@@ -13,6 +13,11 @@ static parse_result_t setup_input(const char *input, parser_t *out_parser) {
   lexer_t lexer = lexer_new(input);
   *out_parser = parser_new(&lexer);
   parse_result_t result = parser_parse(out_parser);
+  if (out_parser->error_count > 0) {
+    for (size_t i = 0; i < out_parser->error_count; i++) {
+      fprintf(stderr, "Parser error: %s\n", out_parser->errors[i]);
+    }
+  }
   cr_assert_eq(out_parser->error_count, 0, "Parser should have no errors");
   cr_assert_not_null(result.expressions, "Parsed expressions should not be NULL");
   return result;
@@ -814,6 +819,119 @@ Test(special_forms, quote_does_not_evaluate_unquote) {
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert(r.result->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(quasiquote, basic_literal_list) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(equal `(1 2 3) '(1 2 3))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert(r.result->type == L_BOOL && r.result->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(quasiquote, unquote_values) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr =
+      setup_input("(begin (define x 10) (equal `(a ,x b ,(+ 1 2)) '(a 10 b 3)))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert(r.result->type == L_BOOL && r.result->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(quasiquote, splicing_basic_and_empty) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(begin (define xs '(2 3))"
+                                  "       (define ys '())"
+                                  "       (list (equal `(1 ,@xs 4) '(1 2 3 4))"
+                                  "             (equal `(1 ,@ys 4) '(1 4))))",
+                                  &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  lval_t *a = r.result->as.cons.car;
+  lval_t *b = r.result->as.cons.cdr->as.cons.car;
+  cr_assert(a->type == L_BOOL && a->as.boolean);
+  cr_assert(b->type == L_BOOL && b->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(quasiquote, dotted_tail_unquote) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(begin (define tail '(2 3)) (equal `(1 . ,tail) '(1 2 3)))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert(r.result->type == L_BOOL && r.result->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(quasiquote, splice_in_tail_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(begin (define xs '(1 2)) `(1 . ,@xs))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(quasiquote, nested_quasiquote_is_data) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(equal `(quasiquote (1 ,x)) '(quasiquote (1 (unquote x))))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  if (r.status != EVAL_OK) {
+    fprintf(stderr, "Error: %s\n", r.error_message);
+  }
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert(r.result->type == L_BOOL);
   cr_assert(r.result->as.boolean);
   evaluator_result_free(&r);
   parse_result_free(&pr);

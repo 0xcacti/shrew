@@ -13,13 +13,6 @@ static bool is_proper_call_list(const s_expression_t *list) {
   return list->data.list.tail == NULL;
 }
 
-static bool sexp_is_symbol(const s_expression_t *sexp, const char **out_name) {
-  if (sexp->type != NODE_ATOM) return false;
-  if (sexp->data.atom.type != ATOM_SYMBOL) return false;
-  if (out_name) *out_name = sexp->data.atom.value.symbol;
-  return true;
-}
-
 eval_result_t eval_ok(lval_t *result) {
   eval_result_t r = { 0 };
   r.status = EVAL_OK;

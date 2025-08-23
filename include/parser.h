@@ -56,6 +56,8 @@ typedef struct parser {
   int qq_depth;
 } parser_t;
 
+bool sexp_is_symbol(const s_expression_t *sexp, const char **out_name);
+bool sexp_is_symbol_name(const s_expression_t *e, const char *name);
 void parser_add_error(parser_t *parser, const char *fmt, ...);
 void parser_clear_errors(parser_t *parser);
 parser_t parser_new(lexer_t *lexer);
