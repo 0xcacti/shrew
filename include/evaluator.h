@@ -20,7 +20,7 @@ typedef struct {
 eval_result_t eval_ok(lval_t *result);
 eval_result_t eval_errf(const char *fmt, ...);
 eval_result_t evaluate_single(s_expression_t *expr, env_t *env);
-eval_result_t evaluatate_many(s_expression_t **exprs, size_t count, env_t *env);
+eval_result_t evaluate_many(s_expression_t **exprs, size_t count, env_t *env);
 eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env);
 void evaluator_result_free(eval_result_t *r);
 

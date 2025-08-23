@@ -187,6 +187,18 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
   }
 }
 
+eval_result_t evaluate_many(s_expression_t **exprs, size_t count, env_t *env) {
+  if (!exprs || count == 0) return eval_ok(lval_nil());
+  eval_result_t last = { 0 };
+
+  for (size_t i = 0; i < count; i++) {
+    eval_result_t r = evaluate_single(exprs[i], env);
+    if (r.status != EVAL_OK) return r;
+    last = r;
+  }
+  return last;
+}
+
 void evaluator_result_free(eval_result_t *r) {
   if (!r) return;
 

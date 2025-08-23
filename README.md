@@ -21,6 +21,7 @@ it's always good to write a lisp when learning a new language.
     - [x] Implement list evaluation 
     - [x] Implement user defined functions
     - [x] Implement closures
+    - [ ] Implement evaluate multiple expressions
     - [ ] Implement special forms
         - [x] define
         - [x] lambda
@@ -103,7 +104,7 @@ it's always good to write a lisp when learning a new language.
         - [x] I/O
             - [x] print
             - [x] newline
-
+- [ ] Implement garbage collector
 - [ ] Implement CLI tool
     - [ ] Repl 
     - [ ] File execution 

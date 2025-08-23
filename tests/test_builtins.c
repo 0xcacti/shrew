@@ -1,7 +1,6 @@
 #include "builtin.h"
 #include "env.h"
 #include "evaluator.h"
-#include "lexer.h"
 #include "lval.h"
 #include "parser.h"
 #include "symbol.h"
@@ -17,6 +16,15 @@ static parse_result_t setup_input(const char *input, parser_t *out_parser) {
   cr_assert_eq(out_parser->error_count, 0, "Parser should have no errors");
   cr_assert_not_null(result.expressions, "Parsed expressions should not be NULL");
   return result;
+}
+
+static char *tmp_write(const char *content) {
+  char tmpl[] = "/tmp/lisp_load_XXXXXX";
+  int fd = mkstemp(tmpl);
+  FILE *f = fdopen(fd, "wb");
+  fwrite(content, 1, strlen(content), f);
+  fclose(f);
+  return strdup(tmpl);
 }
 
 static bool is_num(const lval_t *v, double x) {
@@ -4026,7 +4034,7 @@ Test(misc_builtins, eval_simple_forms) {
   symbol_intern_free_all();
 }
 
-Test(misc_builtins, eval_errors_on_unsupported_or_improper) {
+Test(misc_builtins, eval_improper_form_errors) {
   symbol_intern_init();
   env_t env;
   cr_assert(env_init(&env, NULL));
@@ -4039,5 +4047,102 @@ Test(misc_builtins, eval_errors_on_unsupported_or_improper) {
   parse_result_free(&pr);
   parser_free(&p);
   env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(evaluator_api, evaluate_multiple_runs_and_returns_last) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(define x 5) (+ x 3)", &p);
+  eval_result_t r = evaluate_many(pr.expressions, pr.count, &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_NUM);
+  cr_assert_float_eq(r.result->as.number, 8.0, 1e-10);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(evaluator_api, evaluate_multiple_empty_returns_nil) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  eval_result_t r = evaluate_many(NULL, 0, &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_NIL);
+  evaluator_result_free(&r);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(misc_builtins, load_defines_and_returns_last) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  char *path = tmp_write("(define sq (lambda (x) (* x x)))\n(sq 12)\n");
+  char form[512];
+  snprintf(form, sizeof form, "(load \"%s\")", path);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input(form, &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_NUM);
+  cr_assert_float_eq(r.result->as.number, 144.0, 1e-10);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  remove(path);
+  free(path);
+  symbol_intern_free_all();
+}
+
+Test(misc_builtins, load_empty_returns_nil) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  char *path = tmp_write("");
+  char form[256];
+  snprintf(form, sizeof form, "(load \"%s\")", path);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input(form, &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_NIL);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  remove(path);
+  free(path);
+  symbol_intern_free_all();
+}
+
+Test(misc_builtins, load_parse_error_propagates) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  char *path = tmp_write("(define x 1\n"); /* missing ')' */
+  char form[256];
+  snprintf(form, sizeof form, "(load \"%s\")", path);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input(form, &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  remove(path);
+  free(path);
   symbol_intern_free_all();
 }

@@ -1,4 +1,5 @@
 #include "builtin.h"
+#include "lexer.h"
 #include "symbol.h"
 #include <ctype.h>
 #include <errno.h>
@@ -1198,6 +1199,61 @@ static eval_result_t builtin_eval(size_t argc, lval_t **argv, env_t *env) {
   return res;
 }
 
+static int parse_string_for_load(const char *src, parse_result_t *out) {
+  lexer_t lexer = lexer_new(src);
+  parser_t parser = parser_new(&lexer);
+  *out = parser_parse(&parser);
+  int ok = (parser.error_count == 0);
+  parser_free(&parser);
+  if (!ok) {
+    parse_result_free(out);
+  }
+  return ok;
+}
+
+static eval_result_t builtin_load(size_t argc, lval_t **argv, env_t *env) {
+  if (argc != 1) return eval_errf("load: expected exactly 1 argument, got %zu", argc);
+  if (argv[0]->type != L_STRING) return eval_errf("load: expected argument of type string");
+  const char *path = argv[0]->as.string.ptr;
+
+  FILE *f = fopen(path, "rb");
+  if (!f) return eval_errf("load: cannot open file '%s'", path);
+  if (fseek(f, 0, SEEK_END) != 0) {
+    fclose(f);
+    return eval_errf("load: cannot seek in file '%s'", path);
+  }
+  long sz = ftell(f);
+  if (sz < 0) {
+    fclose(f);
+    return eval_errf("load: cannot tell position in file '%s'", path);
+  }
+  if (fseek(f, 0, SEEK_SET) != 0) {
+    fclose(f);
+    return eval_errf("load: cannot seek in file '%s'", path);
+  }
+  char *buf = malloc((size_t)sz + 1);
+  if (!buf) {
+    fclose(f);
+    return eval_errf("load: out of memory");
+  }
+  size_t nread = sz ? fread(buf, 1, (size_t)sz, f) : 0;
+  fclose(f);
+  if ((long)nread != sz) {
+    free(buf);
+    return eval_errf("load: error reading file '%s'", path);
+  }
+  buf[sz] = '\0';
+  parse_result_t parse_res = (parse_result_t){ 0 };
+  if (!parse_string_for_load(buf, &parse_res)) {
+    free(buf);
+    return eval_errf("load: parse error in file '%s'", path);
+  }
+  free(buf);
+  eval_result_t r = evaluate_many(parse_res.expressions, parse_res.count, env);
+  parse_result_free(&parse_res);
+  return r;
+}
+
 static eval_result_t builtin_print(size_t argc, lval_t **argv, env_t *env) {
   (void)env;
   for (size_t i = 0; i < argc; i++) {
@@ -1292,7 +1348,7 @@ static const builtin_entry_t k_builtins[] = {
   { "error", builtin_error },
   { "gensym", builtin_gensym },
   { "eval", builtin_eval },
-  // { "load", builtin_load },
+  { "load", builtin_load },
   
   // I/O
   { "print", builtin_print },
