@@ -101,8 +101,8 @@ it's always good to write a lisp when learning a new language.
             - [x] eval
             - [ ] load
         - [x] I/O
-            - [ ] print
-            - [ ] newline
+            - [x] print
+            - [x] newline
 
 - [ ] Implement CLI tool
     - [ ] Repl 
