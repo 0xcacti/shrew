@@ -353,7 +353,7 @@ static eval_result_t sf_lambda(s_expression_t *list, env_t *env) {
     }
   }
 
-  lval_t *fn = lval_function(params, param_count, body, body_count, env);
+  lval_t *fn = lval_function(params, param_count, body, body_count, env, false);
   if (!fn) {
     for (size_t i = 0; i < param_count; i++) {
       free(params[i]);
@@ -419,6 +419,87 @@ static eval_result_t sf_begin(s_expression_t *list, env_t *env) {
   return evaluate_many(&list->data.list.elements[1], n - 1, env);
 }
 
+static eval_result_t sf_defmacro(s_expression_t *list, env_t *env) {
+  if (list->data.list.tail != NULL) return eval_errf("defmacro: cannot have dotted arguments");
+  if (list->data.list.count < 3) {
+    return eval_errf("defmacro: need a name and a lambda-ish body");
+  }
+
+  const s_expression_t *name_node = list->data.list.elements[1];
+  if (name_node->type != NODE_ATOM || name_node->data.atom.type != ATOM_SYMBOL) {
+    return eval_errf("defmacro: first argument must be a symbol");
+  }
+
+  const char *name = name_node->data.atom.value.symbol;
+
+  s_expression_t *params_node = list->data.list.elements[2];
+  if (params_node->type != NODE_LIST) {
+    return eval_errf("defmacro: second argument must be a list of parameters");
+  }
+  if (params_node->data.list.tail != NULL) {
+    return eval_errf("defmacro: parameter list cannot be dotted");
+  }
+
+  size_t param_count = params_node->data.list.count;
+  char **params = NULL;
+  if (param_count) {
+    params = calloc(param_count, sizeof(char *));
+    if (!params) return eval_errf("defmacro: memory allocation failed for parameters");
+    for (size_t i = 0; i < param_count; ++i) {
+      const s_expression_t *p = params_node->data.list.elements[i];
+      if (p->type != NODE_ATOM || p->data.atom.type != ATOM_SYMBOL) {
+        for (size_t j = 0; j < i; ++j) {
+          free(params[j]);
+        }
+        free(params);
+        return eval_errf("defmacro: parameter %zu is not a symbol", i + 1);
+      }
+      params[i] = strdup(p->data.atom.value.symbol);
+      if (!params[i]) {
+        for (size_t j = 0; j < i; ++j) {
+          free(params[j]);
+        }
+        free(params);
+        return eval_errf("defmacro: memory allocation failed for parameter '%s'",
+                         p->data.atom.value.symbol);
+      }
+    }
+  }
+
+  size_t body_count = list->data.list.count - 3;
+  s_expression_t **body = NULL;
+  if (body_count) {
+    body = calloc(body_count, sizeof(s_expression_t *));
+    if (!body) {
+      for (size_t i = 0; i < param_count; i++) {
+        free(params[i]);
+      }
+      free(params);
+      return eval_errf("defmacro: memory allocation failed for body");
+    }
+    for (size_t i = 0; i < body_count; ++i) {
+      body[i] = list->data.list.elements[i + 3];
+    }
+  }
+
+  lval_t *fn = lval_function(params, param_count, body, body_count, env, true);
+  if (!fn) {
+    for (size_t i = 0; i < param_count; i++) {
+      free(params[i]);
+    }
+    free(params);
+    free(body);
+    return eval_errf("defmacro: failed to create macro");
+  }
+
+  if (!env_define(env, name, fn)) {
+    lval_free(fn);
+    return eval_errf("defmacro: failed to define macro '%s'", name);
+  }
+
+  return eval_ok(lval_intern(name));
+}
+
 // Lookups
 typedef struct {
   const char *name;
@@ -437,8 +518,7 @@ static const special_entry_t k_specials[] = {
   { "if",     sf_if },
   { "cond", sf_cond },
   { "begin",  sf_begin },
-
-  // { "defmacro", sf_defmacro }
+  { "defmacro", sf_defmacro }
 
 };
 // clang-format on

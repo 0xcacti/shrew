@@ -22,15 +22,15 @@ it's always good to write a lisp when learning a new language.
     - [x] Implement user defined functions
     - [x] Implement closures
     - [x] Implement evaluate multiple expressions
-    - [ ] Implement special forms
+    - [x] Implement special forms
         - [x] define
         - [x] set
         - [x] lambda
         - [x] quote family
             - [x] quote
-            - [ ] quasiquote
-            - [ ] unquote
-            - [ ] unquote-splicing
+            - [x] quasiquote
+            - [x] unquote
+            - [x] unquote-splicing
         - [x] if
         - [x] cond
         - [x] begin

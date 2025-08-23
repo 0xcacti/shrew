@@ -939,3 +939,20 @@ Test(quasiquote, nested_quasiquote_is_data) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(macros, defmacro_defines_symbol) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(defmacro m (x) x)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_SYMBOL);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}

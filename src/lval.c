@@ -1,6 +1,7 @@
 #include "lval.h"
 #include "env.h"
 #include "symbol.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -77,7 +78,8 @@ lval_t *lval_function(char **params,
                       size_t param_count,
                       s_expression_t **body,
                       size_t body_count,
-                      struct env *closure) {
+                      struct env *closure,
+                      bool is_macro) {
   lval_t *v = malloc(sizeof(lval_t));
   if (!v) return NULL;
   v->mark = 0;
@@ -88,6 +90,7 @@ lval_t *lval_function(char **params,
   v->as.function.body = body;
   v->as.function.body_count = body_count;
   v->as.function.closure = closure;
+  v->as.function.is_macro = is_macro;
   if (closure) env_retain(closure);
 
   return v;
@@ -266,6 +269,7 @@ lval_t *lval_copy(const lval_t *v) {
     }
     copy->as.function.closure = v->as.function.closure;
     if (copy->as.function.closure) env_retain(copy->as.function.closure);
+    copy->as.function.is_macro = v->as.function.is_macro;
     break;
   case L_NATIVE:
     copy->as.native.fn = v->as.native.fn;
