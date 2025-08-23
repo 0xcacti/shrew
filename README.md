@@ -93,9 +93,10 @@ it's always good to write a lisp when learning a new language.
         - [ ] Functional 
             - [x] apply
             - [x] map
-            - [ ] reduce
-            - [ ] filter
-            - [ ] fold
+            - [x] reduce
+            - [x] foldl
+            - [x] foldr
+            - [x] filter
             - [ ] eval
             - [ ] load
             - [ ] error
