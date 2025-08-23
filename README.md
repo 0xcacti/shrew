@@ -100,9 +100,10 @@ it's always good to write a lisp when learning a new language.
             - [ ] eval
             - [ ] load
             - [ ] error
+            - [ ] gensym
+        - [x] I/O
             - [ ] print
             - [ ] newline
-            - [ ] gensym
 
 - [ ] Implement CLI tool
     - [ ] Repl 
