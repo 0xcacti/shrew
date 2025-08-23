@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static int gensym_counter = 0;
+
 static eval_result_t builtin_add(size_t argc, lval_t **argv, env_t *env) {
   (void)env;
   double s = 0.0;
@@ -1058,6 +1060,40 @@ static eval_result_t builtin_error(size_t argc, lval_t **argv, env_t *env) {
   return eval_errf("error: %.*s", (int)argv[0]->as.string.len, argv[0]->as.string.ptr);
 }
 
+static eval_result_t builtin_gensym(size_t argc, lval_t **argv, env_t *env) {
+  (void)env;
+  if (argc != 0 && argc != 1) {
+    return eval_errf("gensym: expected 0 or 1 arguments, got %zu", argc);
+  }
+
+  if (argc == 1 && argv[0]->type != L_STRING) {
+    eval_result_t err = eval_errf("gensym: expected argument of type string");
+    return err;
+  }
+
+  char buf[32];
+  int n = 0;
+  if (argc == 1) {
+    n = snprintf(buf,
+                 sizeof(buf),
+                 "%.*s_%d",
+                 (int)argv[0]->as.string.len,
+                 argv[0]->as.string.ptr,
+                 gensym_counter++);
+  } else {
+    n = snprintf(buf, sizeof(buf), "G__%d", gensym_counter++);
+  }
+  if (n < 0 || (size_t)n >= sizeof(buf)) {
+    return eval_errf("gensym: internal error generating symbol");
+  }
+
+  const char *interned = symbol_intern(buf);
+  if (!interned) {
+    return eval_errf("gensym: failed to intern symbol");
+  }
+  return eval_ok(lval_intern(interned));
+}
+
 static eval_result_t builtin_print(size_t argc, lval_t **argv, env_t *env) {
   (void)env;
   for (size_t i = 0; i < argc; i++) {
@@ -1150,7 +1186,7 @@ static const builtin_entry_t k_builtins[] = {
   { "foldr", builtin_foldr },
   { "filter", builtin_filter },
   { "error", builtin_error },
-  // { "gensym", builtin_gensym },
+  { "gensym", builtin_gensym },
   // { "eval", builtin_eval },
   // { "load", builtin_load },
   

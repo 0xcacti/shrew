@@ -22,15 +22,14 @@ it's always good to write a lisp when learning a new language.
     - [x] Implement user defined functions
     - [x] Implement closures
     - [ ] Implement special forms
+        - [x] define
+        - [x] lambda
         - [x] quote family
             - [x] quote
             - [ ] quasiquote
             - [ ] unquote
             - [ ] unquote-splicing
         - [ ] if
-        - [ ] define
-        - [ ] lambda
-        - [ ] lambda
         - [ ] begin
         - [ ] cond
         - [ ] defmacro 

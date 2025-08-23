@@ -3976,3 +3976,26 @@ Test(io_builtins, multiple_prints, .init = cr_redirect_stdout) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(misc_builtins, gensym_uniqueness_and_prefix) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(list (gensym) (gensym \"x-\") (gensym \"x-\"))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  lval_t *s1 = r.result->as.cons.car;
+  lval_t *s2 = r.result->as.cons.cdr->as.cons.car;
+  lval_t *s3 = r.result->as.cons.cdr->as.cons.cdr->as.cons.car;
+  cr_assert_eq(s1->type, L_SYMBOL);
+  cr_assert_eq(s2->type, L_SYMBOL);
+  cr_assert_eq(s3->type, L_SYMBOL);
+  cr_assert(strcmp(s2->as.symbol.name, s3->as.symbol.name) != 0);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
