@@ -578,6 +578,105 @@ Test(define_tests, define_binds_quoted_list_single_parser) {
   symbol_intern_free_all();
 }
 
+Test(special_forms, set_errors_on_unbound) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(set x 1)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, set_top_level_updates_and_returns_value) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(define x 1) (set x 2) x", &p);
+  eval_result_t r = evaluate_many(pr.expressions, pr.count, &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_NUM);
+  cr_assert_float_eq(r.result->as.number, 2.0, 1e-10);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, set_mutates_outer_env_from_lambda) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  /* (define x 1)
+     (define bump (lambda () (set x (+ x 1))))
+     (bump) (bump) x  ==> 3 */
+  parse_result_t pr = setup_input("(define x 1)"
+                                  "(define bump (lambda () (set x (+ x 1))))"
+                                  "(bump)"
+                                  "(bump)"
+                                  "x",
+                                  &p);
+  eval_result_t r = evaluate_many(pr.expressions, pr.count, &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_NUM);
+  cr_assert_float_eq(r.result->as.number, 3.0, 1e-10);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, set_returns_assigned_value) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(define x 10) (equal (set x 42) 42)", &p);
+  eval_result_t r = evaluate_many(pr.expressions, pr.count, &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert(r.result->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, set_can_rebind_builtin_in_global_env) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  /* Replace + with subtraction and verify */
+  parse_result_t pr = setup_input("(set + (lambda (a b) (- a b)))"
+                                  "(+ 5 2)",
+                                  &p);
+  eval_result_t r = evaluate_many(pr.expressions, pr.count, &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_NUM);
+  cr_assert_float_eq(r.result->as.number, 3.0, 1e-10);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
 Test(special_forms, if_basic) {
   symbol_intern_init();
   env_t env;

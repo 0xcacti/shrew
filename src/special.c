@@ -109,6 +109,30 @@ static eval_result_t sf_define(s_expression_t *list, env_t *env) {
   return eval_ok(lval_intern(name));
 }
 
+static eval_result_t sf_set(s_expression_t *list, env_t *env) {
+  if (list->data.list.tail != NULL) return eval_errf("set: dotted form not allowed");
+  if (list->data.list.count != 3) {
+    return eval_errf("set requires exactly two arguments, got %zu", list->data.list.count - 1);
+  }
+
+  const s_expression_t *name_node = list->data.list.elements[1];
+  if (name_node->type != NODE_ATOM || name_node->data.atom.type != ATOM_SYMBOL) {
+    return eval_errf("set: first argument must be a symbol");
+  }
+  const char *name = name_node->data.atom.value.symbol;
+  s_expression_t *value_expr = list->data.list.elements[2];
+  eval_result_t value_res = evaluate_single(value_expr, env);
+  if (value_res.status != EVAL_OK) {
+    return value_res;
+  }
+
+  if (!env_set(env, name, value_res.result)) {
+    lval_free(value_res.result);
+    return eval_errf("set: variable '%s' not defined", name);
+  }
+  return eval_ok(value_res.result);
+}
+
 static eval_result_t sf_lambda(s_expression_t *list, env_t *env) {
   if (list->data.list.count < 3) {
     return eval_errf("lambda requires at least two arguments, got %zu", list->data.list.count - 1);
@@ -235,10 +259,10 @@ static const special_entry_t k_specials[] = {
   { "quote", sf_quote }, 
   { "unquote", sf_unquote },
   { "define", sf_define },
+  { "set", sf_set },
   { "lambda", sf_lambda },
   { "if",     sf_if },
   { "cond", sf_cond },
-  // { "set", sf_set },
   // { "begin",  sf_begin },
   // { "defmacro", sf_defmacro }
 
