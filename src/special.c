@@ -202,6 +202,28 @@ static eval_result_t sf_if(s_expression_t *list, env_t *env) {
   }
 }
 
+static eval_result_t sf_cond(s_expression_t *list, env_t *env) {
+  if (list->data.list.tail != NULL) return eval_errf("cond: cannot have dotted arguments");
+  if (list->data.list.count != 2) return eval_errf("cond: cond requires one argument");
+  s_expression_t *cond_list = list->data.list.elements[1];
+  if (cond_list->type != NODE_LIST) return eval_errf("cond: expects argument to be a list");
+  if (cond_list->data.list.tail != NULL) return eval_errf("cond: cond list cannot be dotted");
+  size_t llen = cond_list->data.list.count;
+  if (llen % 2 != 0) return eval_errf("cond: improperly formatted cond list");
+  for (size_t i = 0; i < llen; i += 2) {
+    s_expression_t *to_check = cond_list->data.list.elements[i];
+    eval_result_t cond_result = evaluate_single(to_check, env);
+    if (cond_result.status != EVAL_OK) return cond_result;
+    if (cond_result.result->type != L_BOOL)
+      return eval_errf("cond: nonboolean condition encountered");
+    bool obtains = cond_result.result->as.boolean;
+    if (obtains) {
+      return evaluate_single(cond_list->data.list.elements[i + 1], env);
+    }
+  }
+  return eval_ok(lval_nil());
+}
+
 // Lookups
 typedef struct {
   const char *name;
@@ -214,9 +236,12 @@ static const special_entry_t k_specials[] = {
   { "unquote", sf_unquote },
   { "define", sf_define },
   { "lambda", sf_lambda },
-  { "if",     sf_if},
-  // {"define", sf_define},
-  // {"begin",  sf_begin},
+  { "if",     sf_if },
+  { "cond", sf_cond },
+  // { "set", sf_set },
+  // { "begin",  sf_begin },
+  // { "defmacro", sf_defmacro }
+
 };
 // clang-format on
 

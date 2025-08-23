@@ -658,3 +658,121 @@ Test(special_forms, if_is_lazy) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(special_forms, cond_basic_first_true) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(equal (cond (#f 'no #t 'yes #t 'later)) 'yes)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert(r.result->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, cond_none_true_returns_nil) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(cond (#f 1 #f 2))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_NIL);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, cond_nonboolean_condition_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(cond (1 'a #t 'b))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, cond_odd_length_list_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(cond (#t 1 #f))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, cond_argument_must_be_list) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(cond 42)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, cond_dotted_list_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(cond (1 . 2))", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(special_forms, cond_is_lazy) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr =
+      setup_input("(equal (cond (#f (error \"boom\") #t 7 #t (error \"boom2\"))) 7)", &p);
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert(r.result->as.boolean);
+  evaluator_result_free(&r);
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}

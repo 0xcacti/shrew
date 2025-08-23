@@ -30,7 +30,7 @@ it's always good to write a lisp when learning a new language.
             - [ ] quasiquote
             - [ ] unquote
             - [ ] unquote-splicing
-        - [ ] if
+        - [x] if
         - [ ] begin
         - [ ] cond
         - [ ] defmacro 
