@@ -1094,6 +1094,110 @@ static eval_result_t builtin_gensym(size_t argc, lval_t **argv, env_t *env) {
   return eval_ok(lval_intern(interned));
 }
 
+static s_expression_t *sexp_from_lval(const lval_t *v) {
+  if (!v) return NULL;
+  s_expression_t *e = NULL;
+  switch (v->type) {
+  case L_NIL: {
+    e = malloc(sizeof *e);
+    e->type = NODE_LIST;
+    e->data.list.count = 0;
+    e->data.list.elements = NULL;
+    e->data.list.tail = NULL;
+  } break;
+  case L_BOOL: {
+    e = malloc(sizeof *e);
+    e->type = NODE_ATOM;
+    e->data.atom.type = ATOM_BOOLEAN;
+    e->data.atom.value.boolean = v->as.boolean;
+  } break;
+  case L_NUM: {
+    e = malloc(sizeof *e);
+    e->type = NODE_ATOM;
+    e->data.atom.type = ATOM_NUMBER;
+    e->data.atom.value.number = v->as.number;
+  } break;
+  case L_STRING: {
+    e = malloc(sizeof *e);
+    e->type = NODE_ATOM;
+    e->data.atom.type = ATOM_STRING;
+    size_t len = v->as.string.len;
+    char *s = malloc(len + 1);
+    if (!s) {
+      free(e);
+      return NULL;
+    }
+    if (len) memcpy(s, v->as.string.ptr, len);
+    s[len] = '\0';
+    e->data.atom.value.string = s;
+  } break;
+  case L_SYMBOL: {
+    e = malloc(sizeof *e);
+    e->type = NODE_ATOM;
+    e->data.atom.type = ATOM_SYMBOL;
+    e->data.atom.value.string = (char *)v->as.symbol.name;
+  } break;
+  case L_CONS: {
+    size_t n = 0;
+    const lval_t *cur = v;
+    while (cur->type == L_CONS) {
+      n++;
+      cur = cur->as.cons.cdr;
+    }
+    e = malloc(sizeof *e);
+    if (!e) return NULL;
+    e->type = NODE_LIST;
+    e->data.list.count = n;
+    e->data.list.elements = calloc(n, sizeof(s_expression_t *));
+    e->data.list.tail = NULL;
+    const lval_t *run = v;
+    for (size_t i = 0; i < n; i++) {
+      e->data.list.elements[i] = sexp_from_lval(run->as.cons.car);
+      run = run->as.cons.cdr;
+    }
+    if (run->type != L_NIL) {
+      e->data.list.tail = sexp_from_lval(run);
+    }
+  } break;
+  case L_NATIVE:
+  case L_FUNCTION:
+  default:
+    return NULL;
+  }
+
+  return e;
+}
+
+static void sexp_free_owned(s_expression_t *sexp) {
+  if (!sexp) return;
+  if (sexp->type == NODE_ATOM) {
+    if (sexp->data.atom.type == ATOM_STRING && sexp->data.atom.value.string) {
+      free(sexp->data.atom.value.string);
+    }
+    free(sexp);
+    return;
+  }
+  if (sexp->type == NODE_LIST) {
+    for (size_t i = 0; i < sexp->data.list.count; i++) {
+      sexp_free_owned(sexp->data.list.elements[i]);
+    }
+    free(sexp->data.list.elements);
+    sexp_free_owned(sexp->data.list.tail);
+    free(sexp);
+    return;
+  }
+  free(sexp);
+}
+
+static eval_result_t builtin_eval(size_t argc, lval_t **argv, env_t *env) {
+  if (argc != 1) return eval_errf("eval: expected exactly 1 argument, got %zu", argc);
+  s_expression_t *form = sexp_from_lval(argv[0]);
+  if (!form) return eval_errf("eval: cannot convert value to s-expression");
+  eval_result_t res = evaluate_single(form, env);
+  sexp_free_owned(form);
+  return res;
+}
+
 static eval_result_t builtin_print(size_t argc, lval_t **argv, env_t *env) {
   (void)env;
   for (size_t i = 0; i < argc; i++) {
@@ -1187,7 +1291,7 @@ static const builtin_entry_t k_builtins[] = {
   { "filter", builtin_filter },
   { "error", builtin_error },
   { "gensym", builtin_gensym },
-  // { "eval", builtin_eval },
+  { "eval", builtin_eval },
   // { "load", builtin_load },
   
   // I/O
