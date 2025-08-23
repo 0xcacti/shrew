@@ -798,10 +798,9 @@ static eval_result_t builtin_apply(size_t argc, lval_t **argv, env_t *env) {
     return eval_errf("apply: first argument must be a function or symbol");
   }
 
-  // 🔑 If it's a symbol, resolve it to the bound function
   if (fn->type == L_SYMBOL) {
     lval_t *binding = env_get_ref(env, fn->as.symbol.name);
-    if (!binding || binding->type != L_FUNCTION) {
+    if (!binding || (binding->type != L_FUNCTION && binding->type != L_NATIVE)) {
       return eval_errf("apply: symbol '%s' is not bound to a function", fn->as.symbol.name);
     }
     fn = binding;
@@ -837,6 +836,60 @@ static eval_result_t builtin_apply(size_t argc, lval_t **argv, env_t *env) {
   free(flat);
 
   return result;
+}
+
+static eval_result_t builtin_map(size_t argc, lval_t **argv, env_t *env) {
+  if (argc != 2) return eval_errf("map: expected at 2 arguments, got %zu", argc);
+
+  lval_t *fn = argv[0];
+  lval_t *list = argv[1];
+  if (fn->type != L_FUNCTION && fn->type != L_SYMBOL && fn->type != L_NATIVE) {
+    return eval_errf("map: first argument must be a function or symbol");
+  }
+
+  if (list->type != L_CONS && list->type != L_NIL) {
+    return eval_errf("map: second argument must be a list, got %s", lval_type_name(list));
+  }
+
+  if (fn->type == L_SYMBOL) {
+    lval_t *binding = env_get_ref(env, fn->as.symbol.name);
+    if (!binding || (binding->type != L_FUNCTION && binding->type != L_NATIVE)) {
+      return eval_errf("map: symbol '%s' is not bound to a function", fn->as.symbol.name);
+    }
+    fn = binding;
+  }
+  if (list->type == L_NIL) {
+    return eval_ok(lval_nil());
+  }
+
+  lval_t *head = NULL;
+  lval_t *tail = NULL;
+  lval_t *cur = list;
+  for (; cur->type == L_CONS; cur = cur->as.cons.cdr) {
+    lval_t *arg0 = cur->as.cons.car;
+    lval_t *call_argv[1] = { arg0 };
+    eval_result_t call_res = evaluate_call(fn, 1, call_argv, env);
+    if (call_res.status != EVAL_OK) {
+      if (head) lval_free(head);
+      return call_res;
+    }
+
+    lval_t *node = lval_cons(call_res.result, NULL);
+    if (!head) {
+      head = tail = node;
+    } else {
+      tail->as.cons.cdr = node;
+      tail = node;
+    }
+  }
+
+  if (cur->type != L_NIL) {
+    if (head) lval_free(head);
+    return eval_errf("map: improper list");
+  }
+
+  tail->as.cons.cdr = lval_nil();
+  return eval_ok(head);
 }
 
 typedef struct {
@@ -901,13 +954,13 @@ static const builtin_entry_t k_builtins[] = {
   { "string->symbol", builtin_str_to_symbol },
   // functional
   { "apply", builtin_apply },
-  // { "error", builtin_error },
-  // { "print", builtin_print },
-  // { "newline", builtin_newline },
-  // { "map", builtin_map },
+  { "map", builtin_map },
   // { "filter", builtin_filter },
   // { "reduce", builtin_reduce },
   // { "fold", builtin_fold },
+  // { "error", builtin_error },
+  // { "print", builtin_print },
+  // { "newline", builtin_newline },
   // { "gensym", builtin_gensym },
   // { "eval", builtin_eval },
   // { "load", builtin_load },

@@ -91,17 +91,17 @@ it's always good to write a lisp when learning a new language.
             - [x] symbol->string
             - [x] string->symbol
         - [ ] Functional 
-            - [ ] apply
-            - [ ] error
-            - [ ] print
-            - [ ] newline
+            - [x] apply
             - [ ] map
             - [ ] filter
             - [ ] reduce
             - [ ] fold
-            - [ ] gensym
             - [ ] eval
             - [ ] load
+            - [ ] error
+            - [ ] print
+            - [ ] newline
+            - [ ] gensym
 
 - [ ] Implement CLI tool
     - [ ] Repl 

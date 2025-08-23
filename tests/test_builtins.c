@@ -3383,3 +3383,197 @@ Test(functional_builtins, apply_basic) {
   env_destroy(&env);
   symbol_intern_free_all();
 }
+
+Test(functional_builtins, apply_with_fixed_args) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(apply + 10 '(1 2 3))", &p);
+
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_NUM);
+  cr_assert_float_eq(r.result->as.number, 16.0, 1e-10);
+  evaluator_result_free(&r);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, apply_lambda_and_define) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(define inc (lambda (x) (+ x 1)))"
+                                  "(apply inc '(41))"
+                                  "(apply (lambda (a b c) (* a (+ b c))) '(2 3 4))",
+                                  &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert_eq(r2.result->type, L_NUM);
+  cr_assert_float_eq(r2.result->as.number, 42.0, 1e-10);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_OK);
+  cr_assert_eq(r3.result->type, L_NUM);
+  cr_assert_float_eq(r3.result->as.number, 14.0, 1e-10);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, apply_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(apply + 1 2)"
+                                  "(apply not 1)"
+                                  "(apply bogus '(1 2))",
+                                  &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_ERR);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_ERR);
+  evaluator_result_free(&r2);
+
+  eval_result_t r3 = evaluate_single(pr.expressions[2], &env);
+  cr_assert_eq(r3.status, EVAL_ERR);
+  evaluator_result_free(&r3);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, map_basic_lambda) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(equal (map (lambda (x) (* x x)) '(1 2 3 4)) '(1 4 9 16))", &p);
+
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert(r.result->as.boolean);
+  evaluator_result_free(&r);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, map_builtin_unary) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(equal (map abs '(-1 0 2 -3)) '(1 0 2 3))", &p);
+
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK, "Map abs failed: %s", r.error_message);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert(r.result->as.boolean);
+  evaluator_result_free(&r);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, map_define_symbol_fn) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(define double (lambda (x) (* x 2)))"
+                                  "(equal (map double '(5 6)) '(10 12))",
+                                  &p);
+
+  eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r1.status, EVAL_OK);
+  evaluator_result_free(&r1);
+
+  eval_result_t r2 = evaluate_single(pr.expressions[1], &env);
+  cr_assert_eq(r2.status, EVAL_OK);
+  cr_assert_eq(r2.result->type, L_BOOL);
+  cr_assert(r2.result->as.boolean);
+  evaluator_result_free(&r2);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, map_empty_list) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(equal (map (lambda (x) (+ x 10)) '()) '())", &p);
+
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_OK);
+  cr_assert_eq(r.result->type, L_BOOL);
+  cr_assert(r.result->as.boolean);
+  evaluator_result_free(&r);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
+
+Test(functional_builtins, map_improper_list_errors) {
+  symbol_intern_init();
+  env_t env;
+  cr_assert(env_init(&env, NULL));
+  env_add_builtins(&env);
+
+  parser_t p = (parser_t){ 0 };
+  parse_result_t pr = setup_input("(map abs '(1 . 2))", &p);
+
+  eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  cr_assert_eq(r.status, EVAL_ERR);
+  evaluator_result_free(&r);
+
+  parse_result_free(&pr);
+  parser_free(&p);
+  env_destroy(&env);
+  symbol_intern_free_all();
+}
