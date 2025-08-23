@@ -24,6 +24,7 @@ it's always good to write a lisp when learning a new language.
     - [x] Implement evaluate multiple expressions
     - [ ] Implement special forms
         - [x] define
+        - [x] set
         - [x] lambda
         - [x] quote family
             - [x] quote
@@ -31,8 +32,8 @@ it's always good to write a lisp when learning a new language.
             - [ ] unquote
             - [ ] unquote-splicing
         - [x] if
+        - [x] cond
         - [ ] begin
-        - [ ] cond
         - [ ] defmacro 
     - [x] Implement builtins
         - [x] Arithmetic

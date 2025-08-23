@@ -8,7 +8,6 @@
 #include "parser.h"
 #include "special.h"
 
-// forward declarations
 static eval_result_t ast_to_quoted_lval(const s_expression_t *e, env_t *env);
 static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list, env_t *env);
 
@@ -36,13 +35,6 @@ static eval_result_t ast_to_quoted_lval(const s_expression_t *e, env_t *env) {
   if (e->type == NODE_LIST) {
     if (e->data.list.count == 0 && e->data.list.tail == NULL) {
       return eval_ok(lval_nil());
-    }
-    if (e->data.list.tail == NULL && e->data.list.count == 2) {
-      const s_expression_t *head = e->data.list.elements[0];
-      if (head->type == NODE_ATOM && head->data.atom.type == ATOM_SYMBOL &&
-          strcmp(head->data.atom.value.symbol, "unquote") == 0) {
-        return evaluate_single(e->data.list.elements[1], env);
-      }
     }
     return ast_list_to_quoted_cons(e, env);
   }
@@ -248,6 +240,13 @@ static eval_result_t sf_cond(s_expression_t *list, env_t *env) {
   return eval_ok(lval_nil());
 }
 
+static eval_result_t sf_begin(s_expression_t *list, env_t *env) {
+  if (list->data.list.tail != NULL) return eval_errf("begin: cannot have dotted arguments");
+  size_t n = list->data.list.count;
+  if (n <= 1) return eval_ok(lval_nil());
+  return evaluate_many(&list->data.list.elements[1], n - 1, env);
+}
+
 // Lookups
 typedef struct {
   const char *name;
@@ -263,7 +262,7 @@ static const special_entry_t k_specials[] = {
   { "lambda", sf_lambda },
   { "if",     sf_if },
   { "cond", sf_cond },
-  // { "begin",  sf_begin },
+  { "begin",  sf_begin },
   // { "defmacro", sf_defmacro }
 
 };
