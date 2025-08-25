@@ -1,9 +1,21 @@
 # Shrew 
 
-A very mini lisp interpreter in C. I'm learning C, and I want to see how well 
-I can write a lisp interpreter in it with minimal dependencies or use of the 
-internet.  This will not be a usuable language in any real sense, but I hear 
-it's always good to write a lisp when learning a new language.
+A very mini lisp interpreter in C. 
+
+I'm learning C, and a friend told me it's always good to build a lisp 
+in a new language you are learning, so I took that advice to heart.  
+I wanted to build it entirely without the help of internet or AI, but 
+it turns out I don't know how to build a lisp interpreter as well as I 
+thought I did in the beginning, so I needed to do a fair bit of research. 
+Nonetheless, it was an extremely useful project for me to learn about 
+good ways to manually manage memory.  
+
+All that said, it's done.  The language is fully implemented with a lexer, parser, 
+and evaluator.  It supports closures, macros, a boatload of builtins, several 
+special forms, and garbage collection. 
+
+Below is my list of todos.  Maybe it will give a sense of everything involved 
+in building the project.  
 
 ### TODO 
 
