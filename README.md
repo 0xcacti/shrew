@@ -106,6 +106,6 @@ it's always good to write a lisp when learning a new language.
             - [x] print
             - [x] newline
 - [ ] Implement garbage collector
-- [ ] Implement CLI tool
-    - [ ] Repl 
-    - [ ] File execution 
+- [x] Implement CLI tool
+    - [x] Repl 
+    - [x] File execution 
