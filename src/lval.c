@@ -1,5 +1,6 @@
 #include "lval.h"
 #include "env.h"
+#include "gc.h"
 #include "symbol.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -7,27 +8,24 @@
 #include <string.h>
 
 lval_t *lval_num(double x) {
-  lval_t *v = malloc(sizeof(lval_t));
+  lval_t *v = gc_alloc_lval();
   if (!v) return NULL;
-  v->mark = 0;
   v->type = L_NUM;
   v->as.number = x;
   return v;
 }
 
 lval_t *lval_bool(bool b) {
-  lval_t *v = malloc(sizeof(lval_t));
+  lval_t *v = gc_alloc_lval();
   if (!v) return NULL;
-  v->mark = 0;
   v->type = L_BOOL;
   v->as.boolean = b;
   return v;
 }
 
 lval_t *lval_string_copy(const char *s, size_t len) {
-  lval_t *v = malloc(sizeof(lval_t));
+  lval_t *v = gc_alloc_lval();
   if (!v) return NULL;
-  v->mark = 0;
   v->type = L_STRING;
   v->as.string.len = len;
   v->as.string.ptr = malloc(len + 1);
@@ -41,9 +39,8 @@ lval_t *lval_string_copy(const char *s, size_t len) {
 }
 
 lval_t *lval_intern(const char *name) {
-  lval_t *v = malloc(sizeof(lval_t));
+  lval_t *v = gc_alloc_lval();
   if (!v) return NULL;
-  v->mark = 0;
   v->type = L_SYMBOL;
 
   const char *interned = symbol_intern(name);
@@ -57,9 +54,8 @@ lval_t *lval_intern(const char *name) {
 }
 
 lval_t *lval_cons(lval_t *car, lval_t *cdr) {
-  lval_t *v = malloc(sizeof(lval_t));
+  lval_t *v = gc_alloc_lval();
   if (!v) return NULL;
-  v->mark = 0;
   v->type = L_CONS;
   v->as.cons.car = car;
   v->as.cons.cdr = cdr;
@@ -67,9 +63,8 @@ lval_t *lval_cons(lval_t *car, lval_t *cdr) {
 }
 
 lval_t *lval_nil(void) {
-  lval_t *v = malloc(sizeof(lval_t));
+  lval_t *v = gc_alloc_lval();
   if (!v) return NULL;
-  v->mark = 0;
   v->type = L_NIL;
   return v;
 }
@@ -80,9 +75,8 @@ lval_t *lval_function(char **params,
                       size_t body_count,
                       struct env *closure,
                       bool is_macro) {
-  lval_t *v = malloc(sizeof(lval_t));
+  lval_t *v = gc_alloc_lval();
   if (!v) return NULL;
-  v->mark = 0;
   v->type = L_FUNCTION;
 
   v->as.function.params = params;
@@ -97,9 +91,8 @@ lval_t *lval_function(char **params,
 }
 
 lval_t *lval_native(void *fn, const char *name) {
-  lval_t *v = malloc(sizeof(lval_t));
+  lval_t *v = gc_alloc_lval();
   if (!v) return NULL;
-  v->mark = 0;
   v->type = L_NATIVE;
   v->as.native.fn = fn;
   v->as.native.name = name;
@@ -178,13 +171,12 @@ void lval_print(const lval_t *v) {
 lval_t *lval_copy(const lval_t *v) {
   if (!v) return NULL;
 
-  lval_t *copy = malloc(sizeof *copy);
+  lval_t *copy = gc_alloc_lval();
   if (!copy) {
     perror("malloc");
     exit(EXIT_FAILURE);
   }
 
-  copy->mark = 0;
   copy->type = v->type;
 
   switch (v->type) {

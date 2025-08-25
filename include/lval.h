@@ -19,6 +19,7 @@ typedef enum {
 typedef struct lval {
   unsigned char mark;
   ltype_t type;
+  struct lval *gc_next;
   union {
     double number;
     bool boolean;
