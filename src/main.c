@@ -122,6 +122,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (interactive) {
+    printf("Welcome to the Shrew REPL!\n");
     repl(&env);
   }
   env_destroy(&env);
@@ -141,7 +142,6 @@ void repl(env_t *env) {
   sigaction(SIGINT, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
 
-  printf("Welcome to the Shrew REPL!\n");
   while (!should_exit) {
     printf("-> ");
     fflush(stdout);
