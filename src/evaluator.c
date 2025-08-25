@@ -107,7 +107,6 @@ static s_expression_t *sexp_from_lval(const lval_t *v) {
     return make_list_nodes(elems, n, tail);
   }
   default:
-    /* treat functions/natives as symbols by name when embedded in data is unexpected */
     return NULL;
   }
 }

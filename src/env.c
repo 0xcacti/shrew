@@ -1,5 +1,4 @@
 #include "env.h"
-#include "builtin.h"
 #include "hashtable.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -125,4 +124,20 @@ lval_t *env_get_ref(env_t *env, const char *key) {
     }
   }
   return NULL;
+}
+
+void env_gc_mark_all(env_t *env, env_mark_fn mark) {
+  for (env_t *e = env; e; e = e->parent) {
+    ht_iter it;
+    ht_iter_begin(e->store, &it);
+#if HT_STRING_KEYS
+    const char *k;
+#else
+    const void *k;
+#endif
+    void *val = NULL;
+    while (ht_iter_next(&it, &k, &val)) {
+      if (val) mark((lval_t *)val);
+    }
+  }
 }
