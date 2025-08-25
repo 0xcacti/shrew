@@ -3,6 +3,7 @@
 #include "lval.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct {
   lval_t *objects;
@@ -11,8 +12,19 @@ typedef struct {
 
 static gc_heap_t G = { 0 };
 
+typedef struct gc_root_entry {
+  lval_t **slot;
+  struct gc_root_entry *next;
+} gc_root_entry_t;
+
+static gc_root_entry_t *G_root_top = NULL;
+static size_t G_root_count = 0;
+
 void gc_init(struct env *global_env) {
   G.global_env = global_env;
+  G.objects = NULL;
+  G_root_top = NULL;
+  G_root_count = 0;
 }
 
 void gc_set_global_env(struct env *global_env) {
@@ -25,6 +37,9 @@ struct lval *gc_alloc_lval() {
     fprintf(stderr, "Out of memory\n");
     exit(1);
   }
+  memset(v, 0, sizeof(*v));
+  v->type = L_NIL;
+  v->gc_next = G.objects;
   G.objects = v;
   return v;
 }
