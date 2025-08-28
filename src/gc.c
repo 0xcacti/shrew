@@ -8,6 +8,8 @@
 typedef struct {
   lval_t *objects;
   struct env *global_env;
+  size_t count;
+  size_t trigger;
 } gc_heap_t;
 
 static gc_heap_t G = { 0 };
@@ -23,6 +25,8 @@ static size_t G_root_count = 0;
 void gc_init(struct env *global_env) {
   G.global_env = global_env;
   G.objects = NULL;
+  G.count = 0;
+  G.trigger = (size_t)-1;
   G_root_top = NULL;
   G_root_count = 0;
 }
@@ -41,6 +45,10 @@ struct lval *gc_alloc_lval() {
   v->type = L_NIL;
   v->gc_next = G.objects;
   G.objects = v;
+  G.count++;
+  if (G.count >= G.trigger) {
+    gc_collect(NULL);
+  }
   return v;
 }
 
@@ -73,23 +81,91 @@ static void gc_mark(lval_t *v) {
   }
 }
 
+static void gc_free_shallow(lval_t *v) {
+  switch (v->type) {
+  case L_STRING:
+    free(v->as.string.ptr);
+    break;
+  case L_FUNCTION:
+    if (v->as.function.params) {
+      for (size_t i = 0; i < v->as.function.param_count; i++) {
+        free(v->as.function.params[i]);
+      }
+      free(v->as.function.params);
+    }
+    if (v->as.function.closure) {
+      env_release(v->as.function.closure);
+    }
+    break;
+  default:
+    break;
+  }
+  free(v);
+}
+
 static void gc_sweep(void) {
   lval_t **p = &G.objects;
+  size_t survivors = 0;
   while (*p) {
     lval_t *v = *p;
     if (!v->mark) {
       *p = v->gc_next;
-      lval_free(v);
+      gc_free_shallow(v);
+      G.count--;
       continue;
     } else {
       v->mark = 0;
+      survivors++;
       p = &v->gc_next;
     }
   }
+  size_t base = 1024;
+  size_t next = survivors < base ? base : survivors * 2;
+  G.trigger = next;
 }
 
 void gc_collect(lval_t *extra_root) {
   if (G.global_env) env_gc_mark_all(G.global_env, gc_mark);
   if (extra_root) gc_mark(extra_root);
+  for (gc_root_entry_t *entry = G_root_top; entry; entry = entry->next) {
+    if (entry->slot && *entry->slot) {
+      gc_mark(*entry->slot);
+    }
+  }
+  if (extra_root) gc_mark(extra_root);
   gc_sweep();
+}
+
+void gc_root(lval_t **slot) {
+  gc_root_entry_t *e = malloc(sizeof(gc_root_entry_t));
+  if (!e) {
+    fprintf(stderr, "Out of memory\n");
+    exit(1);
+  }
+  e->slot = slot;
+  e->next = G_root_top;
+  G_root_top = e;
+  G_root_count++;
+}
+
+void gc_unroot(lval_t **slot) {
+  gc_root_entry_t **p = &G_root_top;
+  while (*p) {
+    if ((*p)->slot == slot) {
+      gc_root_entry_t *to_free = *p;
+      *p = to_free->next;
+      free(to_free);
+      G_root_count--;
+      return;
+    }
+    p = &(*p)->next;
+  }
+}
+
+size_t gc_object_count(void) {
+  return G.count;
+}
+
+void gc_set_trigger(size_t threshold) {
+  G.trigger = threshold ? threshold : (size_t)-1;
 }
