@@ -1,6 +1,7 @@
 #include "builtin.h"
 #include "env.h"
 #include "evaluator.h"
+#include "gc.h"
 #include "lexer.h"
 #include "parser.h"
 #include "symbol.h"
@@ -47,6 +48,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   env_add_builtins(&env);
+  gc_init(&env);
 
   // clang-format off
   static struct option long_options[] = {
@@ -104,6 +106,7 @@ int main(int argc, char *argv[]) {
       return 1;
     }
 
+    gc_collect(NULL);
     eval_result_t eval_result = evaluate_many(parse_result.expressions, parse_result.count, &env);
     if (eval_result.status != EVAL_OK) {
       fprintf(stderr, "Evaluation error: %s\n", eval_result.error_message);
@@ -125,6 +128,7 @@ int main(int argc, char *argv[]) {
     printf("Welcome to the Shrew REPL!\n");
     repl(&env);
   }
+  gc_collect(NULL);
   env_destroy(&env);
   symbol_intern_free_all();
 

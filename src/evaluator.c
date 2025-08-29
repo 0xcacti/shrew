@@ -1,6 +1,7 @@
 #include "evaluator.h"
 #include "builtin.h"
 #include "env.h"
+#include "gc.h"
 #include "lval.h"
 #include "parser.h"
 #include "special.h"
@@ -156,7 +157,6 @@ static eval_result_t datum_from_sexp(const s_expression_t *e) {
     for (ssize_t i = (ssize_t)e->data.list.count - 1; i >= 0; --i) {
       eval_result_t it = datum_from_sexp(e->data.list.elements[i]);
       if (it.status != EVAL_OK) {
-        if (tail) lval_free(tail);
         return it;
       }
       tail = lval_cons(it.result, tail);
@@ -217,12 +217,11 @@ static eval_result_t expand_macro_and_eval(lval_t *macro_fn, s_expression_t *cal
 
   eval_result_t res = evaluate_call(macro_fn, argc, argv, env);
   for (size_t i = 0; i < argc; i++) {
-    if (argv[i]) lval_free(argv[i]);
+    (void)argv[i];
   }
   free(argv);
   if (res.status != EVAL_OK) return res;
   s_expression_t *expanded = sexp_from_lval(res.result);
-  lval_free(res.result);
   if (!expanded) return eval_errf("macro: expansion is not compilable");
   eval_result_t out = evaluate_single(expanded, env);
   sexp_free_owned(expanded);
@@ -258,7 +257,7 @@ eval_result_t evaluate_call(lval_t *fn, size_t argc, lval_t **argv, env_t *env) 
   }
   env_t *call_env = env_new(parent);
   for (size_t i = 0; i < argc; i++) {
-    if (!env_define(call_env, fn->as.function.params[i], lval_copy(argv[i]))) {
+    if (!env_define(call_env, fn->as.function.params[i], argv[i])) {
       env_release(call_env);
       return eval_errf("Failed to set parameter '%s' in function environment",
                        fn->as.function.params[i]);
@@ -299,7 +298,7 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
     }
     case ATOM_SYMBOL: {
       const char *name = a->value.symbol;
-      lval_t *found = env_get(env, name);
+      lval_t *found = env_get_ref(env, name);
       if (found) return eval_ok(found);
       return eval_errf("Unbound symbol: %s", name);
     }
@@ -355,10 +354,14 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
       }
       callee = res.result;
     }
-    eval_result_t r = evaluate_call(callee, argc, argv, env);
-    if (temp_sym) {
-      lval_free(callee);
+    for (size_t i = 0; i < argc; i++) {
+      gc_root(&argv[i]);
     }
+    eval_result_t r = evaluate_call(callee, argc, argv, env);
+    for (size_t i = 0; i < argc; i++) {
+      gc_unroot(&argv[i]);
+    }
+    (void)temp_sym;
     free(argv);
     return r;
   default:
@@ -375,6 +378,7 @@ eval_result_t evaluate_many(s_expression_t **exprs, size_t count, env_t *env) {
     if (r.status != EVAL_OK) return r;
     last = r;
   }
+  gc_collect(last.result);
   return last;
 }
 

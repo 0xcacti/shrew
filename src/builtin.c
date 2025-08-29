@@ -831,9 +831,9 @@ static eval_result_t builtin_apply(size_t argc, lval_t **argv, env_t *env) {
 
   eval_result_t result = evaluate_call(fn, total, flat, env);
 
-  for (size_t i = 0; i < total; i++) {
-    lval_free(flat[i]);
-  }
+  // for (size_t i = 0; i < total; i++) {
+  //   lval_free(flat[i]);
+  // }
   free(flat);
 
   return result;
@@ -871,7 +871,7 @@ static eval_result_t builtin_map(size_t argc, lval_t **argv, env_t *env) {
     lval_t *call_argv[1] = { arg0 };
     eval_result_t call_res = evaluate_call(fn, 1, call_argv, env);
     if (call_res.status != EVAL_OK) {
-      if (head) lval_free(head);
+      // if (head) lval_free(head);
       return call_res;
     }
 
@@ -885,7 +885,7 @@ static eval_result_t builtin_map(size_t argc, lval_t **argv, env_t *env) {
   }
 
   if (cur->type != L_NIL) {
-    if (head) lval_free(head);
+    // if (head) lval_free(head);
     return eval_errf("map: improper list");
   }
 
@@ -920,14 +920,14 @@ static eval_result_t builtin_reduce(size_t argc, lval_t **argv, env_t *env) {
     lval_t *call_argv[2] = { acc, cur->as.cons.car };
     eval_result_t rr = evaluate_call(fn, 2, call_argv, env);
     if (rr.status != EVAL_OK) {
-      if (acc_owned) lval_free(acc);
+      // if (acc_owned) lval_free(acc);
       return rr;
     }
     acc = rr.result;
     acc_owned = true;
   }
   if (cur->type != L_NIL) {
-    if (acc_owned) lval_free(acc);
+    // if (acc_owned) lval_free(acc);
     return eval_errf("reduce: improper list");
   }
   if (acc_owned) return eval_ok(acc);
@@ -981,7 +981,7 @@ static eval_result_t builtin_foldr(size_t argc, lval_t **argv, env_t *env) {
     lval_t *call_argv[2] = { elems[i], acc };
     eval_result_t rr = evaluate_call(fn, 2, call_argv, env);
     if (rr.status != EVAL_OK) {
-      if (acc_owned) lval_free(acc);
+      // if (acc_owned) lval_free(acc);
       free(elems);
       return rr;
     }
@@ -1020,12 +1020,12 @@ static eval_result_t builtin_filter(size_t argc, lval_t **argv, env_t *env) {
     lval_t *call_argv[1] = { arg0 };
     eval_result_t call_res = evaluate_call(fn, 1, call_argv, env);
     if (call_res.status != EVAL_OK) {
-      if (head) lval_free(head);
+      // if (head) lval_free(head);
       return call_res;
     }
     if (call_res.result->type != L_BOOL) {
-      if (head) lval_free(head);
-      lval_free(call_res.result);
+      // if (head) lval_free(head);
+      // lval_free(call_res.result);
       return eval_errf("filter: predicate must return a boolean");
     }
 
@@ -1038,10 +1038,10 @@ static eval_result_t builtin_filter(size_t argc, lval_t **argv, env_t *env) {
         tail = node;
       }
     }
-    lval_free(call_res.result);
+    // lval_free(call_res.result);
   }
   if (cur->type != L_NIL) {
-    if (head) lval_free(head);
+    // if (head) lval_free(head);
     return eval_errf("filter: improper list");
   }
   if (tail) tail->as.cons.cdr = lval_nil();

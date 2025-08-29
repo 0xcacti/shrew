@@ -26,7 +26,7 @@ void gc_init(struct env *global_env) {
   G.global_env = global_env;
   G.objects = NULL;
   G.count = 0;
-  G.trigger = (size_t)-1;
+  G.trigger = 100;
   G_root_top = NULL;
   G_root_count = 0;
 }
@@ -75,6 +75,8 @@ static void gc_mark(lval_t *v) {
     if (v->as.function.closure) {
       env_gc_mark_all(v->as.function.closure, gc_mark);
     }
+    break;
+  case L_STRING:
     break;
   default:
     break;
@@ -168,4 +170,18 @@ size_t gc_object_count(void) {
 
 void gc_set_trigger(size_t threshold) {
   G.trigger = threshold ? threshold : (size_t)-1;
+}
+
+void gc_reset(void) {
+  while (G_root_top) {
+    gc_root_entry_t *next = G_root_top->next;
+    free(G_root_top);
+    G_root_top = next;
+  }
+
+  G.objects = NULL;
+  G.count = 0;
+  G.trigger = 100;
+  G.global_env = NULL;
+  G_root_count = 0;
 }

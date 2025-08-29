@@ -1,6 +1,7 @@
 #include "builtin.h"
 #include "env.h"
 #include "evaluator.h"
+#include "gc.h"
 #include "lval.h"
 #include "parser.h"
 #include "symbol.h"
@@ -36,16 +37,22 @@ Test(add_tests, it_add_two_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(+ 1 2)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
+  if (r.status != EVAL_OK) {
+    printf("Error: %s\n", r.error_message);
+  }
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 3.0));
-  lval_free(r.result);
+
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -55,6 +62,7 @@ Test(add_tests, add_many_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(+ 1 2 3 4.5)", &p);
@@ -63,10 +71,11 @@ Test(add_tests, add_many_numbers) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 10.5));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -76,6 +85,7 @@ Test(add_tests, add_zero_args_returns_zero) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(+)", &p);
@@ -84,10 +94,11 @@ Test(add_tests, add_zero_args_returns_zero) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 0.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -97,6 +108,7 @@ Test(add_tests, add_non_number_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(+ 1 #t)", &p);
@@ -108,6 +120,8 @@ Test(add_tests, add_non_number_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -117,6 +131,7 @@ Test(sub_tests, subtract_two_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(- 5 2)", &p);
@@ -125,10 +140,11 @@ Test(sub_tests, subtract_two_numbers) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 3.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -138,6 +154,7 @@ Test(sub_tests, subtract_chain) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(- 10 1 2 3)", &p);
@@ -146,10 +163,11 @@ Test(sub_tests, subtract_chain) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 4.0)); /* 10-1-2-3 = 4 */
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -159,6 +177,7 @@ Test(sub_tests, subtract_unary_returns_same) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(- 7)", &p);
@@ -167,10 +186,11 @@ Test(sub_tests, subtract_unary_returns_same) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 7.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -180,6 +200,7 @@ Test(sub_tests, subtract_zero_args_returns_zero) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(-)", &p);
@@ -188,10 +209,11 @@ Test(sub_tests, subtract_zero_args_returns_zero) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 0.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -201,6 +223,7 @@ Test(sub_tests, subtract_non_number_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(- 3 #f)", &p);
@@ -212,6 +235,8 @@ Test(sub_tests, subtract_non_number_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -221,6 +246,7 @@ Test(mul_tests, multiply_two_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(* 6 7)", &p);
@@ -229,10 +255,11 @@ Test(mul_tests, multiply_two_numbers) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 42.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -242,6 +269,7 @@ Test(mul_tests, multiply_chain) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(* 2 3 4)", &p);
@@ -250,10 +278,11 @@ Test(mul_tests, multiply_chain) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 24.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -263,6 +292,7 @@ Test(mul_tests, multiply_zero_args_returns_one) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(*)", &p);
@@ -271,10 +301,11 @@ Test(mul_tests, multiply_zero_args_returns_one) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 1.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -284,6 +315,7 @@ Test(mul_tests, multiply_non_number_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(* 2 \"x\")", &p);
@@ -295,6 +327,8 @@ Test(mul_tests, multiply_non_number_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -304,6 +338,7 @@ Test(div_tests, divide_two_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(/ 6 3)", &p);
@@ -312,10 +347,11 @@ Test(div_tests, divide_two_numbers) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 2.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -325,6 +361,7 @@ Test(div_tests, divide_chain) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(/ 20 2 2)", &p);
@@ -333,10 +370,11 @@ Test(div_tests, divide_chain) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 5.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -346,6 +384,7 @@ Test(div_tests, divide_unary_returns_same) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(/ 5)", &p);
@@ -354,10 +393,11 @@ Test(div_tests, divide_unary_returns_same) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 5.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -367,6 +407,7 @@ Test(div_tests, divide_zero_args_returns_zero) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(/)", &p);
@@ -375,10 +416,11 @@ Test(div_tests, divide_zero_args_returns_zero) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 0.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -388,6 +430,7 @@ Test(div_tests, divide_non_number_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(/ 10 #t)", &p);
@@ -399,6 +442,8 @@ Test(div_tests, divide_non_number_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -408,16 +453,18 @@ Test(mod_tests, mod_two_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(mod 10 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 1.0));
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -427,6 +474,7 @@ Test(mod_tests, mod_zero_divisor_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(mod 10 0)", &p);
@@ -437,6 +485,8 @@ Test(mod_tests, mod_zero_divisor_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -446,6 +496,7 @@ Test(mod_tests, mod_non_number_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(mod 10 #f)", &p);
@@ -456,6 +507,8 @@ Test(mod_tests, mod_non_number_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -465,6 +518,7 @@ Test(abs_tests, abs_positive_number) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(abs 5)", &p);
@@ -472,10 +526,11 @@ Test(abs_tests, abs_positive_number) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 5.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -485,16 +540,18 @@ Test(abs_tests, abs_negative_number) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(abs -3.5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 3.5));
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -504,6 +561,7 @@ Test(abs_tests, abs_zero) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(abs 0)", &p);
@@ -511,10 +569,11 @@ Test(abs_tests, abs_zero) {
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert(is_num(r.result, 0.0));
 
-  lval_free(r.result);
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -524,6 +583,7 @@ Test(abs_tests, abs_non_number_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(abs #t)", &p);
@@ -533,6 +593,8 @@ Test(abs_tests, abs_non_number_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -542,6 +604,7 @@ Test(abs_tests, abs_no_args_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(abs)", &p);
@@ -552,6 +615,8 @@ Test(abs_tests, abs_no_args_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -561,6 +626,7 @@ Test(abs_tests, abs_multiple_args_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(abs 1 2)", &p);
@@ -570,6 +636,8 @@ Test(abs_tests, abs_multiple_args_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -579,6 +647,7 @@ Test(min_max_tests, min_single_number) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(min 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -588,6 +657,8 @@ Test(min_max_tests, min_single_number) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -597,6 +668,7 @@ Test(min_max_tests, min_multiple_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(min 5 2 8 1 9)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -606,6 +678,8 @@ Test(min_max_tests, min_multiple_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -615,6 +689,7 @@ Test(min_max_tests, min_negative_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(min -5 -2 -8)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -624,6 +699,8 @@ Test(min_max_tests, min_negative_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -633,6 +710,7 @@ Test(min_max_tests, min_no_args_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(min)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -641,6 +719,8 @@ Test(min_max_tests, min_no_args_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -650,6 +730,7 @@ Test(min_max_tests, min_non_number_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(min 5 #t 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -658,6 +739,8 @@ Test(min_max_tests, min_non_number_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -667,6 +750,7 @@ Test(min_max_tests, max_single_number) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(max 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -676,6 +760,8 @@ Test(min_max_tests, max_single_number) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -685,6 +771,7 @@ Test(min_max_tests, max_multiple_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(max 5 2 8 1 9)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -694,6 +781,8 @@ Test(min_max_tests, max_multiple_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -703,6 +792,7 @@ Test(min_max_tests, max_negative_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(max -5 -2 -8)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -712,6 +802,8 @@ Test(min_max_tests, max_negative_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -721,6 +813,7 @@ Test(rounding_tests, floor_positive_decimal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(floor 3.7)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -730,6 +823,8 @@ Test(rounding_tests, floor_positive_decimal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -739,6 +834,7 @@ Test(rounding_tests, floor_negative_decimal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(floor -3.7)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -748,6 +844,8 @@ Test(rounding_tests, floor_negative_decimal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -757,6 +855,7 @@ Test(rounding_tests, floor_whole_number) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(floor 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -766,6 +865,8 @@ Test(rounding_tests, floor_whole_number) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -775,6 +876,7 @@ Test(rounding_tests, floor_wrong_arg_count) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(floor 1 2)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -783,6 +885,8 @@ Test(rounding_tests, floor_wrong_arg_count) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -792,6 +896,7 @@ Test(rounding_tests, floor_non_number) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(floor #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -800,6 +905,8 @@ Test(rounding_tests, floor_non_number) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -809,6 +916,7 @@ Test(rounding_tests, ceil_positive_decimal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(ceil 3.2)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -818,6 +926,8 @@ Test(rounding_tests, ceil_positive_decimal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -827,6 +937,7 @@ Test(rounding_tests, ceil_negative_decimal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(ceil -3.2)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -836,6 +947,8 @@ Test(rounding_tests, ceil_negative_decimal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -845,6 +958,7 @@ Test(rounding_tests, ceil_wrong_arg_count) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(ceil)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -853,6 +967,8 @@ Test(rounding_tests, ceil_wrong_arg_count) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -862,6 +978,7 @@ Test(rounding_tests, round_positive_half_up) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(round 3.5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -871,6 +988,8 @@ Test(rounding_tests, round_positive_half_up) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -880,6 +999,7 @@ Test(rounding_tests, round_negative_half_down) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(round -3.5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -889,6 +1009,8 @@ Test(rounding_tests, round_negative_half_down) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -898,6 +1020,7 @@ Test(rounding_tests, round_low_decimal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(round 3.2)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -907,6 +1030,8 @@ Test(rounding_tests, round_low_decimal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -916,6 +1041,7 @@ Test(rounding_tests, trunc_positive_decimal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(trunc 3.9)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -925,6 +1051,8 @@ Test(rounding_tests, trunc_positive_decimal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -934,6 +1062,7 @@ Test(rounding_tests, trunc_negative_decimal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(trunc -3.9)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -943,6 +1072,8 @@ Test(rounding_tests, trunc_negative_decimal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -952,6 +1083,7 @@ Test(rounding_tests, trunc_non_number) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(trunc \"hello\")", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -960,6 +1092,8 @@ Test(rounding_tests, trunc_non_number) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -969,6 +1103,7 @@ Test(math_tests, exp_zero) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(exp 0)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -978,6 +1113,8 @@ Test(math_tests, exp_zero) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -987,6 +1124,7 @@ Test(math_tests, exp_one) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(exp 1)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -996,6 +1134,8 @@ Test(math_tests, exp_one) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1005,6 +1145,7 @@ Test(math_tests, exp_negative) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(exp -1)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1014,6 +1155,8 @@ Test(math_tests, exp_negative) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1023,6 +1166,7 @@ Test(math_tests, exp_wrong_arg_count) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(exp 1 2)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1031,6 +1175,8 @@ Test(math_tests, exp_wrong_arg_count) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1040,6 +1186,7 @@ Test(math_tests, exp_non_number) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(exp #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1048,6 +1195,8 @@ Test(math_tests, exp_non_number) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1057,6 +1206,7 @@ Test(math_tests, log_one) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(log 1)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1066,6 +1216,8 @@ Test(math_tests, log_one) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1075,6 +1227,7 @@ Test(math_tests, log_e) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(log 2.718281828)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1084,6 +1237,8 @@ Test(math_tests, log_e) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1093,6 +1248,7 @@ Test(math_tests, log_ten) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(log 10)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1102,6 +1258,8 @@ Test(math_tests, log_ten) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1111,6 +1269,7 @@ Test(math_tests, log_zero_domain_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(log 0)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1119,6 +1278,8 @@ Test(math_tests, log_zero_domain_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1128,6 +1289,7 @@ Test(math_tests, log_negative_nan) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(log -1)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1136,6 +1298,8 @@ Test(math_tests, log_negative_nan) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1145,6 +1309,7 @@ Test(math_tests, log_wrong_arg_count) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(log)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1153,6 +1318,8 @@ Test(math_tests, log_wrong_arg_count) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1162,6 +1329,7 @@ Test(math_tests, sqrt_perfect_squares) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(sqrt 16)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1171,6 +1339,8 @@ Test(math_tests, sqrt_perfect_squares) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1180,6 +1350,7 @@ Test(math_tests, sqrt_zero) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(sqrt 0)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1189,6 +1360,8 @@ Test(math_tests, sqrt_zero) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1198,6 +1371,7 @@ Test(math_tests, sqrt_decimal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(sqrt 2)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1207,6 +1381,8 @@ Test(math_tests, sqrt_decimal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1216,6 +1392,7 @@ Test(math_tests, sqrt_negative_nan) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(sqrt -1)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1224,6 +1401,8 @@ Test(math_tests, sqrt_negative_nan) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1233,6 +1412,7 @@ Test(math_tests, sqrt_non_number) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(sqrt \"hello\")", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1241,6 +1421,8 @@ Test(math_tests, sqrt_non_number) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1250,6 +1432,7 @@ Test(comparison_tests, eq_two_equal_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(= 5 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1259,6 +1442,8 @@ Test(comparison_tests, eq_two_equal_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1268,6 +1453,7 @@ Test(comparison_tests, eq_two_unequal_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(= 5 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1277,6 +1463,8 @@ Test(comparison_tests, eq_two_unequal_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1286,6 +1474,7 @@ Test(comparison_tests, eq_multiple_equal_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(= 3 3 3 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1295,6 +1484,8 @@ Test(comparison_tests, eq_multiple_equal_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1304,6 +1495,7 @@ Test(comparison_tests, eq_multiple_with_one_different) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(= 3 3 5 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1313,6 +1505,8 @@ Test(comparison_tests, eq_multiple_with_one_different) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1322,6 +1516,7 @@ Test(comparison_tests, eq_one_arg_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(= 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1330,6 +1525,8 @@ Test(comparison_tests, eq_one_arg_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1339,6 +1536,7 @@ Test(comparison_tests, eq_non_number_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(= 5 #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1347,6 +1545,8 @@ Test(comparison_tests, eq_non_number_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1356,6 +1556,7 @@ Test(comparison_tests, lt_two_ascending) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(< 3 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1365,6 +1566,8 @@ Test(comparison_tests, lt_two_ascending) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1374,6 +1577,7 @@ Test(comparison_tests, lt_two_descending) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(< 5 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1383,6 +1587,8 @@ Test(comparison_tests, lt_two_descending) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1392,6 +1598,7 @@ Test(comparison_tests, lt_multiple_ascending) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(< 1 2 3 4)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1401,6 +1608,8 @@ Test(comparison_tests, lt_multiple_ascending) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1410,6 +1619,7 @@ Test(comparison_tests, lt_multiple_with_equal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(< 1 2 2 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1419,6 +1629,8 @@ Test(comparison_tests, lt_multiple_with_equal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1428,6 +1640,7 @@ Test(comparison_tests, lt_one_arg_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(< 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1436,6 +1649,8 @@ Test(comparison_tests, lt_one_arg_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1445,6 +1660,7 @@ Test(comparison_tests, gt_two_descending) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(> 5 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1454,6 +1670,8 @@ Test(comparison_tests, gt_two_descending) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1463,6 +1681,7 @@ Test(comparison_tests, gt_multiple_descending) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(> 5 4 3 1)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1472,6 +1691,8 @@ Test(comparison_tests, gt_multiple_descending) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1481,6 +1702,7 @@ Test(comparison_tests, gt_multiple_not_monotonic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(> 5 3 4 1)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1490,6 +1712,8 @@ Test(comparison_tests, gt_multiple_not_monotonic) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1499,6 +1723,7 @@ Test(comparison_tests, le_equal_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(<= 3 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1508,6 +1733,8 @@ Test(comparison_tests, le_equal_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1517,6 +1744,7 @@ Test(comparison_tests, le_ascending_with_equal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(<= 1 2 2 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1526,6 +1754,8 @@ Test(comparison_tests, le_ascending_with_equal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1535,6 +1765,7 @@ Test(comparison_tests, le_violates_order) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(<= 3 2)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1544,6 +1775,8 @@ Test(comparison_tests, le_violates_order) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1553,6 +1786,7 @@ Test(comparison_tests, ge_equal_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(>= 5 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1562,6 +1796,8 @@ Test(comparison_tests, ge_equal_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1571,6 +1807,7 @@ Test(comparison_tests, ge_descending_with_equal) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(>= 5 4 4 2)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1580,6 +1817,8 @@ Test(comparison_tests, ge_descending_with_equal) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1589,6 +1828,7 @@ Test(comparison_tests, ge_violates_order) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(>= 2 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1598,6 +1838,8 @@ Test(comparison_tests, ge_violates_order) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1607,6 +1849,7 @@ Test(equality_tests, eq_same_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(eq 5 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1616,6 +1859,8 @@ Test(equality_tests, eq_same_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1625,6 +1870,7 @@ Test(equality_tests, eq_different_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(eq 5 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1634,6 +1880,8 @@ Test(equality_tests, eq_different_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1643,6 +1891,7 @@ Test(equality_tests, eq_same_booleans) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(eq #t #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1652,6 +1901,8 @@ Test(equality_tests, eq_same_booleans) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1661,6 +1912,7 @@ Test(equality_tests, eq_different_booleans) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(eq #t #f)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1670,6 +1922,8 @@ Test(equality_tests, eq_different_booleans) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1679,6 +1933,7 @@ Test(equality_tests, eq_same_symbols) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(eq 'hello 'hello)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1688,6 +1943,8 @@ Test(equality_tests, eq_same_symbols) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1697,6 +1954,7 @@ Test(equality_tests, eq_different_symbols) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(eq 'hello 'world)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1706,6 +1964,8 @@ Test(equality_tests, eq_different_symbols) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1715,6 +1975,7 @@ Test(equality_tests, eq_different_types) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(eq 5 #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1724,6 +1985,8 @@ Test(equality_tests, eq_different_types) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1733,6 +1996,7 @@ Test(equality_tests, eq_wrong_arg_count) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(eq 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1741,6 +2005,8 @@ Test(equality_tests, eq_wrong_arg_count) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1750,6 +2016,7 @@ Test(equality_tests, eq_too_many_args) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(eq 5 5 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1758,6 +2025,8 @@ Test(equality_tests, eq_too_many_args) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1767,6 +2036,7 @@ Test(equality_tests, equal_same_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal 5 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1776,6 +2046,8 @@ Test(equality_tests, equal_same_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1785,6 +2057,7 @@ Test(equality_tests, equal_different_numbers) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal 5 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1794,6 +2067,8 @@ Test(equality_tests, equal_different_numbers) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1803,6 +2078,7 @@ Test(equality_tests, equal_same_strings) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal \"hello\" \"hello\")", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1812,6 +2088,8 @@ Test(equality_tests, equal_same_strings) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1821,6 +2099,7 @@ Test(equality_tests, equal_different_strings) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal \"hello\" \"world\")", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1830,6 +2109,8 @@ Test(equality_tests, equal_different_strings) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1839,6 +2120,7 @@ Test(equality_tests, equal_simple_lists) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal '(1 2 3) '(1 2 3))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1848,6 +2130,8 @@ Test(equality_tests, equal_simple_lists) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1857,6 +2141,7 @@ Test(equality_tests, equal_different_lists) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal '(1 2 3) '(1 2 4))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1866,6 +2151,8 @@ Test(equality_tests, equal_different_lists) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1875,6 +2162,7 @@ Test(equality_tests, equal_nested_lists) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal '(1 (2 3) 4) '(1 (2 3) 4))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1884,6 +2172,8 @@ Test(equality_tests, equal_nested_lists) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1893,6 +2183,7 @@ Test(equality_tests, equal_different_nested_lists) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal '(1 (2 3) 4) '(1 (2 5) 4))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1902,6 +2193,8 @@ Test(equality_tests, equal_different_nested_lists) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1911,6 +2204,7 @@ Test(equality_tests, equal_empty_lists) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal '() '())", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1920,6 +2214,8 @@ Test(equality_tests, equal_empty_lists) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1929,6 +2225,7 @@ Test(equality_tests, equal_different_length_lists) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal '(1 2) '(1 2 3))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1938,6 +2235,8 @@ Test(equality_tests, equal_different_length_lists) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1947,6 +2246,7 @@ Test(equality_tests, equal_mixed_types_in_lists) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal '(1 \"hello\" #t) '(1 \"hello\" #t))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1956,6 +2256,8 @@ Test(equality_tests, equal_mixed_types_in_lists) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1965,6 +2267,7 @@ Test(equality_tests, equal_different_types) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal 5 \"5\")", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1974,6 +2277,8 @@ Test(equality_tests, equal_different_types) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -1983,6 +2288,7 @@ Test(equality_tests, equal_wrong_arg_count) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(equal 5 5 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -1991,6 +2297,8 @@ Test(equality_tests, equal_wrong_arg_count) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2000,6 +2308,7 @@ Test(boolean_tests, boolean_not_fails_on_non_boolean) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(not 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2008,6 +2317,8 @@ Test(boolean_tests, boolean_not_fails_on_non_boolean) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2017,6 +2328,7 @@ Test(boolean_tests, not_true_becomes_false) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(not #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2026,6 +2338,8 @@ Test(boolean_tests, not_true_becomes_false) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2035,6 +2349,7 @@ Test(boolean_tests, not_false_becomes_true) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(not #f)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2044,6 +2359,8 @@ Test(boolean_tests, not_false_becomes_true) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2053,6 +2370,7 @@ Test(boolean_tests, not_wrong_arg_count) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(not #t #f)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2061,6 +2379,8 @@ Test(boolean_tests, not_wrong_arg_count) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2070,6 +2390,7 @@ Test(boolean_tests, not_no_args_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(not)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2078,6 +2399,8 @@ Test(boolean_tests, not_no_args_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2087,6 +2410,7 @@ Test(boolean_tests, and_all_true) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(and #t #t #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2096,6 +2420,8 @@ Test(boolean_tests, and_all_true) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2105,6 +2431,7 @@ Test(boolean_tests, and_one_false) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(and #t #f #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2114,6 +2441,8 @@ Test(boolean_tests, and_one_false) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2123,6 +2452,7 @@ Test(boolean_tests, and_all_false) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(and #f #f #f)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2132,6 +2462,8 @@ Test(boolean_tests, and_all_false) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2141,6 +2473,7 @@ Test(boolean_tests, and_single_true) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(and #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2150,6 +2483,8 @@ Test(boolean_tests, and_single_true) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2159,6 +2494,7 @@ Test(boolean_tests, and_single_false) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(and #f)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2168,6 +2504,8 @@ Test(boolean_tests, and_single_false) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2177,6 +2515,7 @@ Test(boolean_tests, and_no_args_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(and)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2185,6 +2524,8 @@ Test(boolean_tests, and_no_args_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2194,6 +2535,7 @@ Test(boolean_tests, and_non_boolean_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(and #t 5 #f)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2202,6 +2544,8 @@ Test(boolean_tests, and_non_boolean_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2211,6 +2555,7 @@ Test(boolean_tests, or_all_false) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(or #f #f #f)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2220,6 +2565,8 @@ Test(boolean_tests, or_all_false) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2229,6 +2576,7 @@ Test(boolean_tests, or_one_true) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(or #f #t #f)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2238,6 +2586,8 @@ Test(boolean_tests, or_one_true) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2247,6 +2597,7 @@ Test(boolean_tests, or_all_true) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(or #t #t #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2256,6 +2607,8 @@ Test(boolean_tests, or_all_true) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2265,6 +2618,7 @@ Test(boolean_tests, or_single_true) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(or #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2274,6 +2628,8 @@ Test(boolean_tests, or_single_true) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2283,6 +2639,7 @@ Test(boolean_tests, or_single_false) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(or #f)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2292,6 +2649,8 @@ Test(boolean_tests, or_single_false) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2301,6 +2660,7 @@ Test(boolean_tests, or_no_args_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(or)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2309,6 +2669,8 @@ Test(boolean_tests, or_no_args_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2318,6 +2680,7 @@ Test(boolean_tests, or_non_boolean_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(or #f \"hello\" #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2326,6 +2689,8 @@ Test(boolean_tests, or_non_boolean_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2335,6 +2700,7 @@ Test(list_tests, cons_creates_pair) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(cons 1 2)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2343,6 +2709,8 @@ Test(list_tests, cons_creates_pair) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2352,6 +2720,7 @@ Test(list_tests, cons_wrong_arg_count) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(cons 1)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2360,6 +2729,8 @@ Test(list_tests, cons_wrong_arg_count) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2369,6 +2740,7 @@ Test(list_tests, car_gets_first_element) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(car '(1 2 3))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2378,6 +2750,8 @@ Test(list_tests, car_gets_first_element) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2387,6 +2761,7 @@ Test(list_tests, car_empty_list_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(car '())", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2395,6 +2770,8 @@ Test(list_tests, car_empty_list_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2404,6 +2781,7 @@ Test(list_tests, car_non_cons_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(car 5)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2412,6 +2790,8 @@ Test(list_tests, car_non_cons_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2421,6 +2801,7 @@ Test(list_tests, cdr_gets_rest) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(cdr '(1 2 3))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2429,6 +2810,8 @@ Test(list_tests, cdr_gets_rest) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2438,6 +2821,7 @@ Test(list_tests, cdr_non_cons_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(cdr \"hello\")", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2446,6 +2830,8 @@ Test(list_tests, cdr_non_cons_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2455,6 +2841,7 @@ Test(list_tests, list_creates_list) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(list 1 2 3)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2463,6 +2850,8 @@ Test(list_tests, list_creates_list) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2472,6 +2861,7 @@ Test(list_tests, list_empty_creates_nil) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(list)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2479,6 +2869,8 @@ Test(list_tests, list_empty_creates_nil) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2488,6 +2880,7 @@ Test(list_tests, length_counts_elements) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(length '(1 2 3 4))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2497,6 +2890,8 @@ Test(list_tests, length_counts_elements) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2506,6 +2901,7 @@ Test(list_tests, length_empty_list) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(length '())", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2515,6 +2911,8 @@ Test(list_tests, length_empty_list) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2524,6 +2922,7 @@ Test(list_tests, length_non_cons_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(length 42)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2532,6 +2931,8 @@ Test(list_tests, length_non_cons_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2541,6 +2942,7 @@ Test(list_tests, append_combines_lists) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(append '(1 2) '(3 4))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2549,6 +2951,8 @@ Test(list_tests, append_combines_lists) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2558,6 +2962,7 @@ Test(list_tests, append_wrong_arg_count) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(append '(1 2))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2566,6 +2971,8 @@ Test(list_tests, append_wrong_arg_count) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2575,6 +2982,7 @@ Test(list_tests, reverse_reverses_list) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(reverse '(1 2 3))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2583,6 +2991,8 @@ Test(list_tests, reverse_reverses_list) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2592,6 +3002,7 @@ Test(list_tests, reverse_empty_list) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(reverse '())", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2599,6 +3010,8 @@ Test(list_tests, reverse_empty_list) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2608,6 +3021,7 @@ Test(list_tests, reverse_non_cons_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = { 0 };
   parse_result_t pr = setup_input("(reverse #t)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -2616,6 +3030,8 @@ Test(list_tests, reverse_non_cons_error) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2625,6 +3041,7 @@ Test(type_predicates, atom_basic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr =
@@ -2662,6 +3079,8 @@ Test(type_predicates, atom_basic) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2671,6 +3090,7 @@ Test(type_predicates, atom_arity_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(atom?) (atom? 1 2)", &p);
 
@@ -2684,6 +3104,8 @@ Test(type_predicates, atom_arity_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2693,6 +3115,7 @@ Test(type_predicates, list_basic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(list? '()) (list? '(1 2)) (list? 1)", &p);
@@ -2714,6 +3137,8 @@ Test(type_predicates, list_basic) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2723,6 +3148,7 @@ Test(type_predicates, list_arity_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(list?) (list? 1 2)", &p);
 
@@ -2736,6 +3162,8 @@ Test(type_predicates, list_arity_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2745,6 +3173,7 @@ Test(type_predicates, null_basic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(null? '()) (null? '(1)) (null? 1)", &p);
@@ -2766,6 +3195,8 @@ Test(type_predicates, null_basic) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2775,6 +3206,7 @@ Test(type_predicates, null_arity_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(null?) (null? 1 2)", &p);
 
@@ -2788,6 +3220,8 @@ Test(type_predicates, null_arity_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2797,6 +3231,7 @@ Test(type_predicates, number_basic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(number? 3.14) (number? 'x) (number? '())", &p);
@@ -2818,6 +3253,8 @@ Test(type_predicates, number_basic) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2827,6 +3264,7 @@ Test(type_predicates, number_arity_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(number?) (number? 1 2)", &p);
 
@@ -2840,6 +3278,8 @@ Test(type_predicates, number_arity_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2849,6 +3289,7 @@ Test(type_predicates, symbol_basic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(symbol? 'x) (symbol? 1) (symbol? \"hi\")", &p);
@@ -2870,6 +3311,8 @@ Test(type_predicates, symbol_basic) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2879,6 +3322,7 @@ Test(type_predicates, symbol_arity_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(symbol?) (symbol? 'x 'y)", &p);
 
@@ -2892,6 +3336,8 @@ Test(type_predicates, symbol_arity_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2901,6 +3347,7 @@ Test(type_predicates, string_basic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(string? \"hi\") (string? 1) (string? 'x)", &p);
@@ -2922,6 +3369,8 @@ Test(type_predicates, string_basic) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2931,6 +3380,7 @@ Test(type_predicates, string_arity_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(string?) (string? \"a\" \"b\")", &p);
 
@@ -2944,6 +3394,8 @@ Test(type_predicates, string_arity_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2953,6 +3405,7 @@ Test(type_predicates, pair_basic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(pair? '(1 . 2)) (pair? '(1)) (pair? '()) (pair? 1)", &p);
@@ -2982,6 +3435,8 @@ Test(type_predicates, pair_basic) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -2991,6 +3446,7 @@ Test(type_predicates, pair_arity_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(pair?) (pair? 1 2)", &p);
 
@@ -3004,6 +3460,8 @@ Test(type_predicates, pair_arity_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3013,6 +3471,7 @@ Test(type_predicates, function_basic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(function? 'number?) (function? 'x) (function? 1)", &p);
@@ -3034,6 +3493,8 @@ Test(type_predicates, function_basic) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3043,6 +3504,7 @@ Test(type_predicates, function_arity_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(function?) (function? 'x 'y)", &p);
 
@@ -3056,6 +3518,8 @@ Test(type_predicates, function_arity_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3065,6 +3529,7 @@ Test(string_builtins, string_length_basic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input(
@@ -3087,6 +3552,8 @@ Test(string_builtins, string_length_basic) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3096,6 +3563,7 @@ Test(string_builtins, string_length_arity_and_type_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr =
@@ -3115,6 +3583,8 @@ Test(string_builtins, string_length_arity_and_type_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3124,6 +3594,7 @@ Test(string_builtins, string_append_zero_one_many) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(string-append)"
@@ -3151,6 +3622,8 @@ Test(string_builtins, string_append_zero_one_many) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3160,6 +3633,7 @@ Test(string_builtins, string_append_type_error_any_non_string_arg_fails) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(string-append 1)"
@@ -3181,6 +3655,8 @@ Test(string_builtins, string_append_type_error_any_non_string_arg_fails) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3190,6 +3666,7 @@ Test(cast_builtins, number_to_string_roundtrip) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(string->number (number->string 0))"
@@ -3226,6 +3703,8 @@ Test(cast_builtins, number_to_string_roundtrip) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3235,6 +3714,7 @@ Test(cast_builtins, number_to_string_arity_and_type_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr =
@@ -3254,6 +3734,8 @@ Test(cast_builtins, number_to_string_arity_and_type_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3263,6 +3745,7 @@ Test(cast_builtins, string_to_number_success_and_failures) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(string->number \"0\")"
@@ -3302,6 +3785,8 @@ Test(cast_builtins, string_to_number_success_and_failures) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3311,6 +3796,7 @@ Test(cast_builtins, symbol_string_roundtrip_and_types) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(symbol->string 'foo)"
@@ -3358,6 +3844,8 @@ Test(cast_builtins, symbol_string_roundtrip_and_types) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3367,6 +3855,7 @@ Test(functional_builtins, apply_basic) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(apply + '(1 2 3))", &p);
@@ -3382,6 +3871,8 @@ Test(functional_builtins, apply_basic) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3391,6 +3882,7 @@ Test(functional_builtins, apply_with_fixed_args) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(apply + 10 '(1 2 3))", &p);
@@ -3403,6 +3895,8 @@ Test(functional_builtins, apply_with_fixed_args) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3412,6 +3906,7 @@ Test(functional_builtins, apply_lambda_and_define) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define inc (lambda (x) (+ x 1)))"
@@ -3437,6 +3932,8 @@ Test(functional_builtins, apply_lambda_and_define) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3446,6 +3943,7 @@ Test(functional_builtins, apply_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(apply + 1 2)"
@@ -3467,6 +3965,8 @@ Test(functional_builtins, apply_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3476,6 +3976,7 @@ Test(functional_builtins, map_basic_lambda) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(equal (map (lambda (x) (* x x)) '(1 2 3 4)) '(1 4 9 16))", &p);
@@ -3488,6 +3989,8 @@ Test(functional_builtins, map_basic_lambda) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3497,6 +4000,7 @@ Test(functional_builtins, map_builtin_unary) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(equal (map abs '(-1 0 2 -3)) '(1 0 2 3))", &p);
@@ -3509,6 +4013,8 @@ Test(functional_builtins, map_builtin_unary) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3518,6 +4024,7 @@ Test(functional_builtins, map_define_symbol_fn) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define double (lambda (x) (* x 2)))"
@@ -3536,6 +4043,8 @@ Test(functional_builtins, map_define_symbol_fn) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3545,6 +4054,7 @@ Test(functional_builtins, map_empty_list) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(equal (map (lambda (x) (+ x 10)) '()) '())", &p);
@@ -3557,6 +4067,8 @@ Test(functional_builtins, map_empty_list) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3566,6 +4078,7 @@ Test(functional_builtins, map_improper_list_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(map abs '(1 . 2))", &p);
@@ -3576,6 +4089,8 @@ Test(functional_builtins, map_improper_list_errors) {
 
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3585,6 +4100,7 @@ Test(functional_builtins, apply_mixed_fixed_and_list) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(apply + 10 '(1 2 3))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3594,6 +4110,8 @@ Test(functional_builtins, apply_mixed_fixed_and_list) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3603,6 +4121,7 @@ Test(functional_builtins, reduce_sum_no_init) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(reduce + '(1 2 3 4))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3612,6 +4131,8 @@ Test(functional_builtins, reduce_sum_no_init) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3621,6 +4142,7 @@ Test(functional_builtins, reduce_sum_with_init) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(reduce + 10 '(1 2 3))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3630,6 +4152,8 @@ Test(functional_builtins, reduce_sum_with_init) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3639,6 +4163,7 @@ Test(functional_builtins, reduce_empty_with_init_returns_init) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(reduce * 2 '())", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3648,6 +4173,8 @@ Test(functional_builtins, reduce_empty_with_init_returns_init) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3657,6 +4184,7 @@ Test(functional_builtins, reduce_single_element_no_init) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(reduce + '(42))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3666,6 +4194,8 @@ Test(functional_builtins, reduce_single_element_no_init) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3675,6 +4205,7 @@ Test(functional_builtins, reduce_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(reduce + '())"
                                   "(reduce + '(1 . 2))",
@@ -3687,6 +4218,8 @@ Test(functional_builtins, reduce_errors) {
   evaluator_result_free(&r2);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3696,6 +4229,7 @@ Test(functional_builtins, foldl_vs_foldr_subtraction) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(list (foldl - 0 '(1 2 3)) (foldr - 0 '(1 2 3)))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3710,6 +4244,8 @@ Test(functional_builtins, foldl_vs_foldr_subtraction) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3719,6 +4255,7 @@ Test(functional_builtins, foldr_cons_rebuilds_list_foldl_reverses) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr =
       setup_input("(list (equal (foldr cons '() '(1 2 3)) '(1 2 3))"
@@ -3733,6 +4270,8 @@ Test(functional_builtins, foldr_cons_rebuilds_list_foldl_reverses) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3742,6 +4281,7 @@ Test(functional_builtins, foldr_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(foldr + '())"
                                   "(foldr + '(1 . 2))",
@@ -3754,6 +4294,8 @@ Test(functional_builtins, foldr_errors) {
   evaluator_result_free(&r2);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3763,6 +4305,7 @@ Test(functional_builtins, filter_builtin_number_predicate) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(equal (filter number? '(1 \"a\" 2 3 \"b\" 4)) '(1 2 3 4))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3772,6 +4315,8 @@ Test(functional_builtins, filter_builtin_number_predicate) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3781,6 +4326,7 @@ Test(functional_builtins, filter_lambda_positive) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr =
       setup_input("(equal (filter (lambda (x) (> x 0)) '(-2 0 3 -1 4)) '(3 4))", &p);
@@ -3791,6 +4337,8 @@ Test(functional_builtins, filter_lambda_positive) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3800,6 +4348,7 @@ Test(functional_builtins, filter_defined_symbol_predicate) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define odd? (lambda (x) (= (mod x 2) 1)))"
                                   "(equal (filter odd? '(1 2 3 4 5 6 7)) '(1 3 5 7))",
@@ -3814,6 +4363,8 @@ Test(functional_builtins, filter_defined_symbol_predicate) {
   evaluator_result_free(&r2);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3823,6 +4374,7 @@ Test(functional_builtins, filter_empty_list) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(equal (filter (lambda (x) (> x 10)) '()) '())", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3832,6 +4384,8 @@ Test(functional_builtins, filter_empty_list) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3841,6 +4395,7 @@ Test(functional_builtins, filter_improper_list_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(filter number? '(1 . 2))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3848,6 +4403,8 @@ Test(functional_builtins, filter_improper_list_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3857,6 +4414,7 @@ Test(functional_builtins, filter_predicate_must_return_bool) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(filter (lambda (x) x) '(1 2 3))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3864,6 +4422,8 @@ Test(functional_builtins, filter_predicate_must_return_bool) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3873,6 +4433,7 @@ Test(functional_builtins, builtin_error_correctly_formats) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(error \"manually thrown error\n\")", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3881,6 +4442,8 @@ Test(functional_builtins, builtin_error_correctly_formats) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3890,6 +4453,7 @@ Test(io_builtins, print_empty, .init = cr_redirect_stdout) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(print)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3898,6 +4462,8 @@ Test(io_builtins, print_empty, .init = cr_redirect_stdout) {
   cr_assert_stdout_eq_str("\n");
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3907,6 +4473,7 @@ Test(io_builtins, print_mixed_args, .init = cr_redirect_stdout) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(print 1 \"a\" 'foo)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3915,6 +4482,8 @@ Test(io_builtins, print_mixed_args, .init = cr_redirect_stdout) {
   cr_assert_stdout_eq_str("1 \"a\" foo\n");
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3924,6 +4493,7 @@ Test(io_builtins, newline_once, .init = cr_redirect_stdout) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(newline)", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3933,6 +4503,8 @@ Test(io_builtins, newline_once, .init = cr_redirect_stdout) {
   cr_assert_stdout_eq_str("\n");
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3942,6 +4514,7 @@ Test(io_builtins, newline_twice, .init = cr_redirect_stdout) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(newline)(newline)", &p);
   eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
@@ -3954,6 +4527,8 @@ Test(io_builtins, newline_twice, .init = cr_redirect_stdout) {
   cr_assert_stdout_eq_str("\n\n");
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3963,6 +4538,7 @@ Test(io_builtins, multiple_prints, .init = cr_redirect_stdout) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(print 1)(print 2 3)", &p);
   eval_result_t r1 = evaluate_single(pr.expressions[0], &env);
@@ -3974,6 +4550,8 @@ Test(io_builtins, multiple_prints, .init = cr_redirect_stdout) {
   cr_assert_stdout_eq_str("1\n2 3\n");
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -3983,6 +4561,7 @@ Test(misc_builtins, gensym_uniqueness_and_prefix) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(list (gensym) (gensym \"x-\") (gensym \"x-\"))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -3997,6 +4576,8 @@ Test(misc_builtins, gensym_uniqueness_and_prefix) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -4006,6 +4587,7 @@ Test(misc_builtins, eval_simple_forms) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr =
       setup_input("(list (eval 41) (eval '(+ 1 2 3)) (eval '((lambda (x) (* x x)) 7)))", &p);
@@ -4023,6 +4605,8 @@ Test(misc_builtins, eval_simple_forms) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -4032,6 +4616,7 @@ Test(misc_builtins, eval_improper_form_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(eval '(1 . 2))", &p);
   eval_result_t r = evaluate_single(pr.expressions[0], &env);
@@ -4039,6 +4624,8 @@ Test(misc_builtins, eval_improper_form_errors) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -4048,6 +4635,7 @@ Test(evaluator_api, evaluate_multiple_runs_and_returns_last) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define x 5) (+ x 3)", &p);
   eval_result_t r = evaluate_many(pr.expressions, pr.count, &env);
@@ -4057,6 +4645,8 @@ Test(evaluator_api, evaluate_multiple_runs_and_returns_last) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -4066,10 +4656,13 @@ Test(evaluator_api, evaluate_multiple_empty_returns_nil) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   eval_result_t r = evaluate_many(NULL, 0, &env);
   cr_assert_eq(r.status, EVAL_OK);
   cr_assert_eq(r.result->type, L_NIL);
   evaluator_result_free(&r);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -4079,6 +4672,7 @@ Test(misc_builtins, load_defines_and_returns_last) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   char *path = tmp_write("(define sq (lambda (x) (* x x)))\n(sq 12)\n");
   char form[512];
   snprintf(form, sizeof form, "(load \"%s\")", path);
@@ -4091,6 +4685,8 @@ Test(misc_builtins, load_defines_and_returns_last) {
   evaluator_result_free(&r);
   parse_result_free(&pr);
   parser_free(&p);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   remove(path);
   free(path);
@@ -4102,6 +4698,7 @@ Test(misc_builtins, load_empty_returns_nil) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   char *path = tmp_write("");
   char form[256];
   snprintf(form, sizeof form, "(load \"%s\")", path);
@@ -4124,6 +4721,7 @@ Test(misc_builtins, load_parse_error_propagates) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   char *path = tmp_write("(define x 1\n"); /* missing ')' */
   char form[256];
   snprintf(form, sizeof form, "(load \"%s\")", path);

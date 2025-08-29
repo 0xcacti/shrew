@@ -24,31 +24,28 @@ lval_t *lval_bool(bool b) {
 }
 
 lval_t *lval_string_copy(const char *s, size_t len) {
+
+  char *buf = malloc(len + 1);
+  if (!buf) return NULL;
   lval_t *v = gc_alloc_lval();
-  if (!v) return NULL;
-  v->type = L_STRING;
-  v->as.string.len = len;
-  v->as.string.ptr = malloc(len + 1);
-  if (!v->as.string.ptr) {
-    free(v);
+  if (!v) {
+    free(buf);
     return NULL;
   }
+  v->type = L_STRING;
+  v->as.string.len = len;
+  v->as.string.ptr = buf;
   memcpy(v->as.string.ptr, s, len);
   v->as.string.ptr[len] = '\0';
   return v;
 }
 
 lval_t *lval_intern(const char *name) {
+  const char *interned = symbol_intern(name);
+  if (!interned) return NULL;
   lval_t *v = gc_alloc_lval();
   if (!v) return NULL;
   v->type = L_SYMBOL;
-
-  const char *interned = symbol_intern(name);
-  if (!interned) {
-    free(v);
-    return NULL;
-  }
-
   v->as.symbol.name = interned;
   return v;
 }
@@ -170,110 +167,101 @@ void lval_print(const lval_t *v) {
 
 lval_t *lval_copy(const lval_t *v) {
   if (!v) return NULL;
-
-  lval_t *copy = gc_alloc_lval();
-  if (!copy) {
-    perror("malloc");
-    exit(EXIT_FAILURE);
-  }
-
-  copy->type = v->type;
-
   switch (v->type) {
-  case L_NUM:
-    copy->as.number = v->as.number;
-    break;
-
-  case L_BOOL:
-    copy->as.boolean = v->as.boolean;
-    break;
-
+  case L_NUM: {
+    lval_t *o = gc_alloc_lval();
+    o->type = L_NUM;
+    o->as.number = v->as.number;
+    return o;
+  }
+  case L_BOOL: {
+    lval_t *o = gc_alloc_lval();
+    o->type = L_BOOL;
+    o->as.boolean = v->as.boolean;
+    return o;
+  }
   case L_STRING: {
     size_t len = v->as.string.len;
-    copy->as.string.len = len;
-    copy->as.string.ptr = malloc(len + 1);
-    if (!copy->as.string.ptr) {
+    char *buf = malloc(len + 1);
+    if (!buf) {
       perror("malloc");
-      free(copy);
       exit(EXIT_FAILURE);
     }
-    if (len) memcpy(copy->as.string.ptr, v->as.string.ptr, len);
-    copy->as.string.ptr[len] = '\0';
-  } break;
-
-  case L_SYMBOL: {
-    const char *name = v->as.symbol.name;
-    lval_t *interned = lval_intern(name);
-    free(copy);
-    return interned;
+    if (len) memcpy(buf, v->as.string.ptr, len);
+    buf[len] = '\0';
+    lval_t *o = gc_alloc_lval();
+    o->type = L_STRING;
+    o->as.string.len = len;
+    o->as.string.ptr = buf;
+    return o;
   }
-
-  case L_NIL:
-    break;
-
-  case L_CONS:
-    copy->as.cons.car = lval_copy(v->as.cons.car);
-    copy->as.cons.cdr = lval_copy(v->as.cons.cdr);
-    break;
-
-  case L_FUNCTION:
-    copy->as.function.param_count = v->as.function.param_count;
-    if (v->as.function.param_count > 0) {
-      copy->as.function.params = malloc(v->as.function.param_count * sizeof(char *));
-      if (!copy->as.function.params) {
+  case L_SYMBOL: {
+    lval_t *o = gc_alloc_lval();
+    o->type = L_SYMBOL;
+    o->as.symbol.name = v->as.symbol.name;
+    return o;
+  }
+  case L_NIL: {
+    lval_t *o = gc_alloc_lval();
+    o->type = L_NIL;
+    return o;
+  }
+  case L_CONS: {
+    lval_t *o = gc_alloc_lval();
+    o->type = L_CONS;
+    o->as.cons.car = lval_copy(v->as.cons.car);
+    o->as.cons.cdr = lval_copy(v->as.cons.cdr);
+    return o;
+  }
+  case L_FUNCTION: {
+    lval_t *o = gc_alloc_lval();
+    o->type = L_FUNCTION;
+    o->as.function.param_count = v->as.function.param_count;
+    if (v->as.function.param_count) {
+      o->as.function.params = malloc(v->as.function.param_count * sizeof(char *));
+      if (!o->as.function.params) {
         perror("malloc");
-        free(copy);
         exit(EXIT_FAILURE);
       }
       for (size_t i = 0; i < v->as.function.param_count; i++) {
-        copy->as.function.params[i] = strdup(v->as.function.params[i]);
-        if (!copy->as.function.params[i]) {
+        o->as.function.params[i] = strdup(v->as.function.params[i]);
+        if (!o->as.function.params[i]) {
           perror("strdup");
-          for (size_t j = 0; j < i; j++) {
-            free(copy->as.function.params[j]);
-          }
-          free(copy->as.function.params);
-          free(copy);
           exit(EXIT_FAILURE);
         }
       }
     } else {
-      copy->as.function.params = NULL;
+      o->as.function.params = NULL;
     }
-
-    copy->as.function.body_count = v->as.function.body_count;
-    if (v->as.function.body_count > 0) {
-      copy->as.function.body = malloc(v->as.function.body_count * sizeof(s_expression_t *));
-      if (!copy->as.function.body) {
+    o->as.function.body_count = v->as.function.body_count;
+    if (v->as.function.body_count) {
+      o->as.function.body = malloc(v->as.function.body_count * sizeof(s_expression_t *));
+      if (!o->as.function.body) {
         perror("malloc");
-        for (size_t i = 0; i < v->as.function.param_count; i++) {
-          free(copy->as.function.params[i]);
-        }
-        free(copy->as.function.params);
-        free(copy);
         exit(EXIT_FAILURE);
       }
-      memcpy(copy->as.function.body,
+      memcpy(o->as.function.body,
              v->as.function.body,
              v->as.function.body_count * sizeof(s_expression_t *));
     } else {
-      copy->as.function.body = NULL;
+      o->as.function.body = NULL;
     }
-    copy->as.function.closure = v->as.function.closure;
-    if (copy->as.function.closure) env_retain(copy->as.function.closure);
-    copy->as.function.is_macro = v->as.function.is_macro;
-    break;
-  case L_NATIVE:
-    copy->as.native.fn = v->as.native.fn;
-    copy->as.native.name = v->as.native.name;
-    break;
+    o->as.function.closure = v->as.function.closure;
+    if (o->as.function.closure) env_retain(o->as.function.closure);
+    o->as.function.is_macro = v->as.function.is_macro;
+    return o;
+  }
+  case L_NATIVE: {
+    lval_t *o = gc_alloc_lval();
+    o->type = L_NATIVE;
+    o->as.native.fn = v->as.native.fn;
+    o->as.native.name = v->as.native.name;
+    return o;
+  }
   default:
     fprintf(stderr, "lval_copy: unsupported type %d\n", (int)v->type);
-    free(copy);
     exit(EXIT_FAILURE);
   }
-
-  return copy;
 }
 
 void lval_free(lval_t *v) {
