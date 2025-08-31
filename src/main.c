@@ -84,6 +84,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (script_contents) {
+    if (interactive) printf("Welcome to the Shrew REPL!\n");
     lexer = lexer_new(script_contents);
     parser = parser_new(&lexer);
     parse_result_t parse_result = parser_parse(&parser);
@@ -125,7 +126,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (interactive) {
-    printf("Welcome to the Shrew REPL!\n");
+    if (!script_contents) printf("Welcome to the Shrew REPL!\n");
     repl(&env);
   }
   gc_collect(NULL);
