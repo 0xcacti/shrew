@@ -1,5 +1,6 @@
 #include "env.h"
 #include "evaluator.h"
+#include "gc.h"
 #include "lexer.h"
 #include "lval.h"
 #include "parser.h"
@@ -22,6 +23,7 @@ Test(evaluator_tests, evaluate_number_atom) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("42", &parser);
@@ -34,10 +36,11 @@ Test(evaluator_tests, evaluate_number_atom) {
   cr_assert_eq(res.result->type, L_NUM);
   cr_assert(fabs(res.result->as.number - 42.0) < 1e-9);
 
-  lval_free(res.result);
   evaluator_result_free(&res);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -47,6 +50,7 @@ Test(evaluator_tests, evaluate_string_atom) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("\"Hello, World!\"", &parser);
@@ -59,10 +63,11 @@ Test(evaluator_tests, evaluate_string_atom) {
   cr_assert_eq(res.result->type, L_STRING);
   cr_assert_str_eq(res.result->as.string.ptr, "Hello, World!");
 
-  lval_free(res.result);
   evaluator_result_free(&res);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -72,6 +77,7 @@ Test(evaluator_tests, evaluate_boolean_atom) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("#t #f", &parser);
@@ -91,10 +97,11 @@ Test(evaluator_tests, evaluate_boolean_atom) {
   cr_assert_eq(res.result->type, L_BOOL);
   cr_assert(!res.result->as.boolean);
 
-  lval_free(res.result);
   evaluator_result_free(&res);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -104,6 +111,7 @@ Test(evaluator_tests, evaluate_predefined_symbol) {
 
   env_t env;
   cr_assert(env_init(&env, NULL));
+  gc_init(&env);
   bool success = env_define(&env, "meow", lval_num(42));
   cr_assert(success, "Failed to define 'meow' in the environment");
 
@@ -118,10 +126,11 @@ Test(evaluator_tests, evaluate_predefined_symbol) {
   cr_assert_eq(res.result->type, L_NUM);
   cr_assert(fabs(res.result->as.number - 42.0) < 1e-9);
 
-  lval_free(res.result);
   evaluator_result_free(&res);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -130,6 +139,7 @@ Test(evaluator_tests, evaluate_unbound_symbol_errors) {
   symbol_intern_init();
   env_t env;
   cr_assert(env_init(&env, NULL));
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("does-not-exist", &parser);
@@ -144,6 +154,8 @@ Test(evaluator_tests, evaluate_unbound_symbol_errors) {
   evaluator_result_free(&res);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -153,6 +165,7 @@ Test(evaluator_tests, evaluate_symbol_env_chain_and_shadowing) {
 
   env_t parent;
   cr_assert(env_init(&parent, NULL));
+  gc_init(&parent);
   env_t child;
   cr_assert(env_init(&child, &parent));
 
@@ -164,10 +177,11 @@ Test(evaluator_tests, evaluate_symbol_env_chain_and_shadowing) {
     cr_assert_eq(r.status, EVAL_OK);
     cr_assert_eq(r.result->type, L_NUM);
     cr_assert(fabs(r.result->as.number - 1.0) < 1e-9);
-    lval_free(r.result);
     evaluator_result_free(&r);
     parse_result_free(&pr);
     parser_free(&p);
+    gc_collect(NULL);
+    gc_reset();
   }
 
   cr_assert(env_define(&child, "x", lval_num(2)));
@@ -178,10 +192,11 @@ Test(evaluator_tests, evaluate_symbol_env_chain_and_shadowing) {
     cr_assert_eq(r.status, EVAL_OK);
     cr_assert_eq(r.result->type, L_NUM);
     cr_assert(fabs(r.result->as.number - 2.0) < 1e-9);
-    lval_free(r.result);
     evaluator_result_free(&r);
     parse_result_free(&pr);
     parser_free(&p);
+    gc_collect(NULL);
+    gc_reset();
   }
 
   env_destroy(&child);
@@ -193,6 +208,7 @@ Test(evaluator_tests, evaluate_literal_allocates_fresh_lval_each_time) {
   symbol_intern_init();
   env_t env;
   cr_assert(env_init(&env, NULL));
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("7", &parser);
@@ -209,12 +225,12 @@ Test(evaluator_tests, evaluate_literal_allocates_fresh_lval_each_time) {
   cr_assert(fabs(r1.result->as.number - 7.0) < 1e-9);
   cr_assert(fabs(r2.result->as.number - 7.0) < 1e-9);
 
-  lval_free(r1.result);
-  lval_free(r2.result);
   evaluator_result_free(&r1);
   evaluator_result_free(&r2);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -222,6 +238,7 @@ Test(evaluator_tests, evaluate_literal_allocates_fresh_lval_each_time) {
 Test(evaluator_tests, evaluate_null_expr_is_error) {
   env_t env;
   cr_assert(env_init(&env, NULL));
+  gc_init(&env);
   eval_result_t r = evaluate_single(NULL, &env);
   cr_assert_eq(r.status, EVAL_ERR);
   cr_assert_not_null(r.error_message);
@@ -233,6 +250,7 @@ Test(evaluator_tests, evaluate_string_allocates_fresh_copy_each_time) {
   symbol_intern_init();
   env_t env;
   cr_assert(env_init(&env, NULL));
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("\"abc\"", &parser);
@@ -250,12 +268,12 @@ Test(evaluator_tests, evaluate_string_allocates_fresh_copy_each_time) {
                 r2.result->as.string.ptr,
                 "Distinct heap buffers expected for each string literal evaluation");
 
-  lval_free(r1.result);
-  lval_free(r2.result);
   evaluator_result_free(&r1);
   evaluator_result_free(&r2);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }

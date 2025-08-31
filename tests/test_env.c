@@ -13,6 +13,7 @@ Test(env_tests, initializes_env) {
 Test(env_tests, define_and_get_in_current_env) {
   env_t env;
   cr_assert(env_init(&env, NULL));
+  // gc_init(&env);
   lval_t *v = lval_num(42);
 
   cr_assert(env_define(&env, "x", v), "define should succeed");

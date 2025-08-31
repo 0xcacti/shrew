@@ -1,6 +1,7 @@
 #include "builtin.h"
 #include "env.h"
 #include "evaluator.h"
+#include "gc.h"
 #include "lexer.h"
 #include "lval.h"
 #include "parser.h"
@@ -33,6 +34,7 @@ Test(evaluator_test, evaluate_empty_list) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("()", &parser);
@@ -44,9 +46,10 @@ Test(evaluator_test, evaluate_empty_list) {
   cr_assert_not_null(res.result);
   cr_assert_eq(res.result->type, L_NIL);
 
-  lval_free(res.result);
   evaluator_result_free(&res);
   parse_result_free(&pr);
+  gc_collect(NULL);
+  gc_reset();
   parser_free(&parser);
   env_destroy(&env);
   symbol_intern_free_all();
@@ -58,6 +61,7 @@ Test(evaluator_lists, dotted_list_call_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("(+ 1 . 2)", &parser);
@@ -71,6 +75,8 @@ Test(evaluator_lists, dotted_list_call_errors) {
 
   evaluator_result_free(&res);
   parse_result_free(&pr);
+  gc_collect(NULL);
+  gc_reset();
   parser_free(&parser);
   env_destroy(&env);
   symbol_intern_free_all();
@@ -82,6 +88,7 @@ Test(evaluator_lists, head_is_number_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("(1 2 3)", &parser);
@@ -95,7 +102,11 @@ Test(evaluator_lists, head_is_number_errors) {
 
   evaluator_result_free(&res);
   parse_result_free(&pr);
+  gc_collect(NULL);
+  gc_reset();
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -106,6 +117,7 @@ Test(evaluator_lists, head_is_list_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("((meow-fn 1 2) 3)", &parser);
@@ -120,6 +132,8 @@ Test(evaluator_lists, head_is_list_errors) {
   evaluator_result_free(&res);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -130,6 +144,7 @@ Test(evaluator_lists, unknown_function_symbol_errors) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("(does-not-exist 1)", &parser);
@@ -144,6 +159,8 @@ Test(evaluator_lists, unknown_function_symbol_errors) {
   evaluator_result_free(&res);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -154,6 +171,7 @@ Test(evaluator_lists, nested_calls_evaluate_arguments) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t parser = { 0 };
   parse_result_t pr = setup_input("(+ 1 (* 2 3) (- 10 4) (/ 9 3))", &parser);
@@ -165,10 +183,11 @@ Test(evaluator_lists, nested_calls_evaluate_arguments) {
   cr_assert_not_null(res.result);
   cr_assert(is_num(res.result, 16.0));
 
-  lval_free(res.result);
   evaluator_result_free(&res);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -179,6 +198,7 @@ Test(evaluator_lists, evaluates_user_defined_functions_simple) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define add2 (lambda (x) (+ x 2)))"
@@ -199,10 +219,11 @@ Test(evaluator_lists, evaluates_user_defined_functions_simple) {
   cr_assert_not_null(call_res.result);
   cr_assert(is_num(call_res.result, 16.0));
 
-  lval_free(call_res.result);
   evaluator_result_free(&call_res);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -213,6 +234,7 @@ Test(evaluator_lists, evaluates_user_defined_functions_closure) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
 
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define make-adder (lambda (a) (lambda (x) (+ x a))))"
@@ -233,10 +255,11 @@ Test(evaluator_lists, evaluates_user_defined_functions_closure) {
   cr_assert_not_null(r2.result);
   cr_assert(is_num(r2.result, 16.0));
 
-  lval_free(r2.result);
   evaluator_result_free(&r2);
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -247,6 +270,7 @@ Test(evaluator_lists, evaluates_user_defined_functions_multi_body) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define add2 (lambda (x) 0 (+ x 2)))"
                                   " (add2 14)",
@@ -263,11 +287,12 @@ Test(evaluator_lists, evaluates_user_defined_functions_multi_body) {
   cr_assert_eq(r1.status, EVAL_OK);
   cr_assert_not_null(r1.result);
   cr_assert(is_num(r1.result, 16.0));
-  lval_free(r1.result);
   evaluator_result_free(&r1);
 
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -278,6 +303,7 @@ Test(evaluator_lists, evaluates_user_defined_functions_shadowing) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define a 5)"
                                   " (define make (lambda (a) (lambda (x) (+ a x))))"
@@ -296,11 +322,12 @@ Test(evaluator_lists, evaluates_user_defined_functions_shadowing) {
   cr_assert_eq(r2.status, EVAL_OK);
   cr_assert_not_null(r2.result);
   cr_assert(is_num(r2.result, 10.0));
-  lval_free(r2.result);
   evaluator_result_free(&r2);
 
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }
@@ -311,6 +338,7 @@ Test(evaluator_lists, evaluates_user_defined_functions_three_level_closure) {
   env_t env;
   cr_assert(env_init(&env, NULL));
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t parser = (parser_t){ 0 };
   parse_result_t pr = setup_input("(define make2 (lambda (a) (lambda (b) (lambda (x) (+ x a b)))))"
                                   " (define add1 (make2 1))"
@@ -334,11 +362,12 @@ Test(evaluator_lists, evaluates_user_defined_functions_three_level_closure) {
   cr_assert_eq(r3.status, EVAL_OK);
   cr_assert_not_null(r3.result);
   cr_assert(is_num(r3.result, 13.0));
-  lval_free(r3.result);
   evaluator_result_free(&r3);
 
   parse_result_free(&pr);
   parser_free(&parser);
+  gc_collect(NULL);
+  gc_reset();
   env_destroy(&env);
   symbol_intern_free_all();
 }

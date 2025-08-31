@@ -121,7 +121,7 @@ Test(lval_tests, it_creates_function) {
   body[0]->data.atom.type = ATOM_SYMBOL;
   body[0]->data.atom.value.symbol = "body_symbol";
 
-  lval_t *func = lval_function(params, 2, body, 1, NULL);
+  lval_t *func = lval_function(params, 2, body, 1, NULL, false);
 
   cr_assert_not_null(func, "function lval should not be NULL");
   cr_assert_eq(func->type, L_FUNCTION, "lval type should be L_FUNCTION");
@@ -145,7 +145,7 @@ Test(lval_tests, function_copy_works) {
   body[0]->data.atom.type = ATOM_NUMBER;
   body[0]->data.atom.value.number = 42;
 
-  lval_t *original = lval_function(params, 1, body, 1, NULL);
+  lval_t *original = lval_function(params, 1, body, 1, NULL, false);
 
   lval_t *copy = lval_copy(original);
 
@@ -215,7 +215,7 @@ Test(lval_tests, prints_function, .init = redirect_stdout) {
   body[0]->data.atom.type = ATOM_NUMBER;
   body[0]->data.atom.value.number = 42;
 
-  lval_t *func = lval_function(params, 1, body, 1, NULL);
+  lval_t *func = lval_function(params, 1, body, 1, NULL, false);
 
   lval_print(func);
   putchar('\n');

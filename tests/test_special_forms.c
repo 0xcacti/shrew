@@ -971,8 +971,8 @@ Test(quasiquote, splicing_basic_and_empty) {
   symbol_intern_init();
   env_t env;
   cr_assert(env_init(&env, NULL));
-  gc_init(&env);
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr = setup_input("(begin (define xs '(2 3))"
                                   "       (define ys '())"
@@ -1150,8 +1150,8 @@ Test(macros, macro_unless) {
   symbol_intern_init();
   env_t env;
   cr_assert(env_init(&env, NULL));
-  gc_init(&env);
   env_add_builtins(&env);
+  gc_init(&env);
   parser_t p = (parser_t){ 0 };
   parse_result_t pr =
       setup_input("(begin "
