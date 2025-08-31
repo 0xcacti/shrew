@@ -11,6 +11,7 @@ void gc_init(struct env *global_env);
 void gc_set_global_env(struct env *global_env);
 struct lval *gc_alloc_lval();
 void gc_collect(struct lval *extra_root);
+void gc_maybe_collect(void);
 void gc_reset(void);
 
 void gc_root(struct lval **slot);

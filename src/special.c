@@ -55,7 +55,6 @@ static eval_result_t ast_list_to_quoted_cons(const s_expression_t *list, env_t *
     const s_expression_t *elem = list->data.list.elements[i];
     eval_result_t elem_res = ast_to_quoted_lval(elem, env);
     if (elem_res.status != EVAL_OK) {
-      lval_free(tail);
       return elem_res;
     }
     lval_t *acc = lval_cons(elem_res.result, tail);
@@ -133,14 +132,12 @@ static eval_result_t qq_expand_list(const s_expression_t *list, env_t *env, int 
       if (depth == 1) {
         eval_result_t r = evaluate_single((s_expression_t *)arg, env);
         if (r.status != EVAL_OK) {
-          lval_free(tail);
           return r;
         }
         tail = lval_cons(r.result, tail);
       } else {
         eval_result_t inner = qq_expand_any(arg, env, depth - 1);
         if (inner.status != EVAL_OK) {
-          lval_free(tail);
           return inner;
         }
         lval_t *form = make_simple_list("unquote", inner.result);
@@ -153,12 +150,9 @@ static eval_result_t qq_expand_list(const s_expression_t *list, env_t *env, int 
       if (depth == 1) {
         eval_result_t r = evaluate_single((s_expression_t *)arg, env);
         if (r.status != EVAL_OK) {
-          lval_free(tail);
           return r;
         }
         if (r.result->type != L_CONS && r.result->type != L_NIL) {
-          lval_free(tail);
-          lval_free(r.result);
           return eval_errf("unquote-splicing: expected list");
         }
         size_t n = 0;
@@ -168,15 +162,11 @@ static eval_result_t qq_expand_list(const s_expression_t *list, env_t *env, int 
           cur = cur->as.cons.cdr;
         }
         if (cur->type != L_NIL) {
-          lval_free(tail);
-          lval_free(r.result);
           return eval_errf("unquote-splicing: expected proper list");
         }
         if (n) {
           lval_t **elems = malloc(sizeof(lval_t *) * n);
           if (!elems) {
-            lval_free(tail);
-            lval_free(r.result);
             return eval_errf("oom");
           }
           size_t k = 0;
@@ -186,11 +176,9 @@ static eval_result_t qq_expand_list(const s_expression_t *list, env_t *env, int 
             tail = lval_cons(lval_copy(elems[j]), tail);
           free(elems);
         }
-        lval_free(r.result);
       } else {
         eval_result_t inner = qq_expand_any(arg, env, depth - 1);
         if (inner.status != EVAL_OK) {
-          lval_free(tail);
           return inner;
         }
         lval_t *form = make_simple_list("unquote-splicing", inner.result);
@@ -202,7 +190,6 @@ static eval_result_t qq_expand_list(const s_expression_t *list, env_t *env, int 
     if (is_simple_form(elem, "quasiquote", &arg)) {
       eval_result_t inner = qq_expand_any(arg, env, depth + 1);
       if (inner.status != EVAL_OK) {
-        lval_free(tail);
         return inner;
       }
       lval_t *form = make_simple_list("quasiquote", inner.result);
@@ -212,7 +199,6 @@ static eval_result_t qq_expand_list(const s_expression_t *list, env_t *env, int 
 
     eval_result_t v = qq_expand_any(elem, env, depth);
     if (v.status != EVAL_OK) {
-      lval_free(tail);
       return v;
     }
     tail = lval_cons(v.result, tail);
@@ -267,7 +253,6 @@ static eval_result_t sf_define(s_expression_t *list, env_t *env) {
   }
 
   if (!env_define(env, name, value_res.result)) {
-    lval_free(value_res.result);
     return eval_errf("define: failed to define variable '%s'", name);
   }
   return eval_ok(lval_intern(name));
@@ -291,7 +276,6 @@ static eval_result_t sf_set(s_expression_t *list, env_t *env) {
   }
 
   if (!env_set(env, name, value_res.result)) {
-    lval_free(value_res.result);
     return eval_errf("set: variable '%s' not defined", name);
   }
   return eval_ok(value_res.result);
@@ -493,7 +477,6 @@ static eval_result_t sf_defmacro(s_expression_t *list, env_t *env) {
   }
 
   if (!env_define(env, name, fn)) {
-    lval_free(fn);
     return eval_errf("defmacro: failed to define macro '%s'", name);
   }
 

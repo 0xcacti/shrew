@@ -288,13 +288,21 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
   case NODE_ATOM: {
     atom_t *a = &expr->data.atom;
     switch (a->type) {
-    case ATOM_NUMBER:
-      return eval_ok(lval_num(a->value.number));
-    case ATOM_BOOLEAN:
-      return eval_ok(lval_bool(a->value.boolean));
+    case ATOM_NUMBER: {
+      eval_result_t r = eval_ok(lval_num(a->value.number));
+      gc_maybe_collect();
+      return r;
+    }
+    case ATOM_BOOLEAN: {
+      eval_result_t r = eval_ok(lval_bool(a->value.boolean));
+      gc_maybe_collect();
+      return r;
+    }
     case ATOM_STRING: {
       const char *str = a->value.string;
-      return eval_ok(lval_string_copy(a->value.string, strlen(str)));
+      eval_result_t r = eval_ok(lval_string_copy(a->value.string, strlen(str)));
+      gc_maybe_collect();
+      return r;
     }
     case ATOM_SYMBOL: {
       const char *name = a->value.symbol;
@@ -308,7 +316,9 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
   }
   case NODE_LIST:
     if (expr->data.list.count == 0 && expr->data.list.tail == NULL) {
-      return eval_ok(lval_nil());
+      eval_result_t r = eval_ok(lval_nil());
+      gc_maybe_collect();
+      return r;
     }
 
     if (!is_proper_call_list(expr)) {
@@ -363,6 +373,9 @@ eval_result_t evaluate_single(s_expression_t *expr, env_t *env) {
     }
     (void)temp_sym;
     free(argv);
+    if (r.status == EVAL_OK) {
+      gc_maybe_collect();
+    }
     return r;
   default:
     return eval_errf("Unknown expression type: %d", expr->type);

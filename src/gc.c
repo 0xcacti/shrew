@@ -46,9 +46,6 @@ struct lval *gc_alloc_lval() {
   v->gc_next = G.objects;
   G.objects = v;
   G.count++;
-  if (G.count >= G.trigger) {
-    gc_collect(NULL);
-  }
   return v;
 }
 
@@ -134,8 +131,13 @@ void gc_collect(lval_t *extra_root) {
       gc_mark(*entry->slot);
     }
   }
-  if (extra_root) gc_mark(extra_root);
   gc_sweep();
+}
+
+void gc_maybe_collect() {
+  if (G.count >= G.trigger) {
+    gc_collect(NULL);
+  }
 }
 
 void gc_root(lval_t **slot) {
@@ -173,6 +175,12 @@ void gc_set_trigger(size_t threshold) {
 }
 
 void gc_reset(void) {
+  while (G.objects) {
+    lval_t *next = G.objects->gc_next;
+    gc_free_shallow(G.objects);
+    G.objects = next;
+  }
+
   while (G_root_top) {
     gc_root_entry_t *next = G_root_top->next;
     free(G_root_top);
